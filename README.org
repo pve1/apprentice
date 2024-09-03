@@ -6,4 +6,5 @@
 
 Then, in a lisp buffer do:
 
-M-x slime-apprentice-describe
+~M-x slime-apprentice-describe~
+
