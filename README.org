@@ -1,2 +1,9 @@
 
 * Slime Apprentice
+
+- Load or byte compile ~slime-apprentice.el~ in Emacs.
+- Load the ~slime-apprentice~ system in Lisp.
+
+Then, in a lisp buffer do:
+
+M-x slime-apprentice-describe
