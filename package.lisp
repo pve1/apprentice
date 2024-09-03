@@ -1,4 +1,6 @@
-;;;; Requires package.seed
+;;;; Requires
+;;;;   package.seed
+;;;;   capitalized-export
 
 (package.seed:define-package :slime-apprentice)
 
