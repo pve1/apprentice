@@ -6,11 +6,11 @@
 (unless (find-package "SLIME-APPRENTICE-READ")
   (make-package "SLIME-APPRENTICE-READ" :use nil))
 
-(defvar *apprentice* nil)
-(defvar *previous-description* nil)
+(defvar *Apprentice* nil)
+(defvar *Max-description-size* 10000)
+(defvar *Force-return-description* nil)
 (defvar *previous-object* nil)
-(defvar *max-description-size* 10000)
-(defvar *force-return-description* nil)
+(defvar *previous-description* nil)
 
 (defgeneric Description (apprentice object stream)
   (:method (apprentice object stream)
