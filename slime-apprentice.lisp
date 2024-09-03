@@ -6,13 +6,14 @@
 (unless (find-package "SLIME-APPRENTICE-READ")
   (make-package "SLIME-APPRENTICE-READ" :use nil))
 
+(defvar *apprentice* nil)
 (defvar *previous-description* nil)
 (defvar *previous-object* nil)
 (defvar *max-description-size* 10000)
 (defvar *force-return-description* nil)
 
-(defgeneric Description (object stream)
-  (:method (object stream)
+(defgeneric Description (apprentice object stream)
+  (:method (apprentice object stream)
     (describe object stream)))
 
 (defun return-description (object desc)
@@ -28,7 +29,8 @@
 
 (defun Presentation-description (presentation-id)
   (let* ((desc (with-output-to-string (s)
-                (description (swank:lookup-presented-object 
+                (description *apprentice*
+                             (swank:lookup-presented-object
                               presentation-id)
                              s))))
     (return-description presentation-id desc)))
@@ -58,7 +60,7 @@
       (unintern preliminary-symbol (find-package "SLIME-APPRENTICE-READ")))
     (if actual-symbol
         (let ((desc (with-output-to-string (s)
-                      (description actual-symbol s))))
+                      (description *apprentice* actual-symbol s))))
           (return-description actual-symbol desc))
         nil)))
 
