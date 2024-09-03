@@ -24,7 +24,7 @@
 (defvar-local slime-apprentice-locked-p nil)
 
 (defvar slime-apprentice-help-line
-  (let ((s " [q]:quit [l]:lock [-]|[+]:freq [m]:mode ")
+  (let ((s " [q]:quit [l|L]:lock [-|+]:freq [m]:mode ")
         (s2 "\n\n"))
     (setf s (propertize s 'face 'fringe))
     (setf s2 (propertize s2 'face 'default))
