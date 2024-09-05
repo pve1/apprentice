@@ -13,7 +13,7 @@
 (define-key slime-apprentice-mode-map (kbd "-") 'slime-apprentice-slower-polling)
 (define-key slime-apprentice-mode-map (kbd "m") 'slime-apprentice-toggle-update-mode)
 
-(defvar slime-apprentice-polling-frequency 0.8)
+(defvar slime-apprentice-polling-frequency 0.4)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
 (defvar slime-apprentice-update-mode 'idle) ; or 'continuous
 (defvar slime-apprentice-force-update nil)
@@ -128,7 +128,7 @@
               ((stringp results)
                (erase-buffer)
                (slime-apprentice-insert results)))))
-    (beginning-of-buffer)))
+    (goto-char (point-min))))
 
 (defun slime-apprentice-update-the-apprentice-buffer (&optional name-or-presentation)
   (interactive)
@@ -179,7 +179,9 @@
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'idle)
   (setf slime-apprentice-describe-timer 
-        (run-with-idle-timer 0.2 t 'slime-apprentice-timer-function))
+        (run-with-idle-timer slime-apprentice-polling-frequency
+                             t
+                             'slime-apprentice-timer-function))
   (message "Idle mode."))
 
 (defun slime-apprentice-reinitialize-timer ()
