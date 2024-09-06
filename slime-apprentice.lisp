@@ -1,4 +1,4 @@
-(in-package :slime-apprentice) [*]
+(in-package :slime-apprentice)
 
 (unless (find-package "SLIME-APPRENTICE-READ")
   (make-package "SLIME-APPRENTICE-READ" :use nil))
