@@ -1,8 +1,5 @@
 (in-package :slime-apprentice)
 
-(unless (find-package "SLIME-APPRENTICE-READ")
-  (make-package "SLIME-APPRENTICE-READ" :use nil))
-
 (defvar *apprentice* nil)
 (defvar *max-description-size* 100000)
 (defvar *force-return-description* nil)
