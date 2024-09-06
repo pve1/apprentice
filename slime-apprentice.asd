@@ -5,4 +5,5 @@
   :version "0.0.1"
   :components ((:file "package")
                (:file "slime-apprentice"))
-  :depends-on (:swank))
+  :depends-on (:swank
+               :eclector))

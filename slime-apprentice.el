@@ -13,7 +13,7 @@
 (define-key slime-apprentice-mode-map (kbd "-") 'slime-apprentice-slower-polling)
 (define-key slime-apprentice-mode-map (kbd "m") 'slime-apprentice-toggle-update-mode)
 
-(defvar slime-apprentice-polling-frequency 0.8)
+(defvar slime-apprentice-polling-frequency 0.4)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
 (defvar slime-apprentice-update-mode 'idle) ; or 'continuous
 (defvar slime-apprentice-force-update nil)
@@ -99,7 +99,7 @@
             (t (error "Missing variable or presentation.")))
     (error (slime-apprentice-cancel-timer)
            (setf slime-apprentice-describe-timer nil)
-           (message "Error retrieving description. Are we consing?")
+           (message "Error retrieving description. Are we consing yet?")
            nil)))
 
 (defun slime-apprentice-create-apprentice-buffer ()
@@ -127,7 +127,8 @@
                (slime-apprentice-insert "[Max size exceeded]"))
               ((stringp results)
                (erase-buffer)
-               (slime-apprentice-insert results)))))))
+               (slime-apprentice-insert results)))))
+    (goto-char (point-min))))
 
 (defun slime-apprentice-update-the-apprentice-buffer (&optional name-or-presentation)
   (interactive)
@@ -151,7 +152,8 @@
 
 (defun slime-apprentice-update-if-live-window (window)
   (let ((buf (window-buffer window)))
-    (when (slime-apprentice-buffer-p buf)
+    (when (and (slime-apprentice-buffer-p buf)
+               (not (eql (current-buffer) buf)))
       (slime-apprentice-update-apprentice-buffer buf))))
 
 (defun slime-apprentice-timer-function ()
@@ -177,7 +179,9 @@
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'idle)
   (setf slime-apprentice-describe-timer 
-        (run-with-idle-timer 0.2 t 'slime-apprentice-timer-function))
+        (run-with-idle-timer slime-apprentice-polling-frequency
+                             t
+                             'slime-apprentice-timer-function))
   (message "Idle mode."))
 
 (defun slime-apprentice-reinitialize-timer ()
