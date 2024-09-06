@@ -9,7 +9,7 @@
   (make-package "SLIME-APPRENTICE-READ" :use nil))
 
 (defvar *Apprentice* nil)
-(defvar *Max-description-size* 10000)
+(defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
