@@ -1,5 +1,6 @@
 ;;;; Requires
 ;;;;   swank
+;;;;   eclector
 ;;;;   "package"
 
 (in-package :slime-apprentice) [*]
@@ -17,12 +18,6 @@
   (:method (apprentice object stream)
     (describe object stream)))
 
-(defgeneric Describe-unknown-symbol (apprentice symbol-name stream)
-  (:method (apprentice (symbol-name string) stream) ; read error, e.g "cl:mapca"
-    nil)
-  (:method (apprentice (symbol-name symbol) stream) ; uninterned symbol
-    nil))
-
 ;; May return a string, :unchanged or :max-size-exceeded.
 (defun return-description (object desc)
   (check-type desc string)
@@ -36,61 +31,64 @@
               *previous-description* desc))
       :max-size-exceeded))
 
+(defun funcall-maybe (package symbol &rest args)
+  (let* ((sym (find-symbol (string symbol) (string package)))
+         (fun (if sym
+                  (fdefinition sym)
+                  (error "The function ~A::~A is undefined."
+                         package
+                         symbol))))
+    (apply fun args)))
+
 (defun Presentation-description (presentation-id)
   (let* ((desc (with-output-to-string (s)
-                 (describe-with-apprentice *apprentice*
-                                           (swank:lookup-presented-object
-                                            presentation-id)
-                                           s))))
+                 (describe-with-apprentice
+                  *apprentice*
+                  (funcall-maybe '#:swank '#:lookup-presented-object
+                                 presentation-id)
+                  s))))
     (when desc
       (return-description presentation-id desc))))
 
-;; Read symbol-name in an empty, special package and try to figure out
-;; which symbol was actually meant.
+(defclass eclector-client () ())
+
+(defparameter *eclector-client* (make-instance 'eclector-client))
+
+(defmethod eclector.reader:interpret-symbol ((client eclector-client)
+                                             input-stream
+                                             package-indicator
+                                             symbol-name
+                                             internp)
+  (flet ((anonymous-symbol (pkg)
+           (let ((sym (make-symbol symbol-name)))
+             (setf (get sym 'package-indicator) pkg)
+             sym)))
+    (cond ((eq :current package-indicator)
+           (or (find-symbol symbol-name *package*)
+               (anonymous-symbol (package-name *package*))))
+          ((eq :keyword package-indicator)
+           (or (find-symbol symbol-name (find-package :keyword))
+               (anonymous-symbol "KEYWORD")))
+          ((find-package package-indicator)
+           (or (find-symbol symbol-name package-indicator)
+               (anonymous-symbol package-indicator)))
+          (t (anonymous-symbol package-indicator)))))
+
+(defun read-from-string-with-client (string)
+  (let ((eclector.base:*client* *eclector-client*))
+    (eclector.reader:read-from-string string)))
+
+(defmethod resolve-symbol (apprentice symbol-name)
+  (read-from-string-with-client symbol-name))
+
 (defun Symbol-description (symbol-name)
   (check-type symbol-name string)
-  (let* ((preliminary-symbol
-           (ignore-errors
-            (let* ((*package* (find-package "SLIME-APPRENTICE-READ"))
-                   (*read-eval* nil)
-                   (result (read-from-string symbol-name)))
-              (when (and result (symbolp result))
-                result))))
-         (actual-symbol
-           ;; Either foo:bar, :foo or  #:foo was read.
-           ;; TODO: Check for a keyword before reading, so we don't
-           ;; intern unnecessarily.
-           (cond ((and preliminary-symbol
-                       (symbolp preliminary-symbol)
-                       (not (eql (symbol-package preliminary-symbol)
-                                 (find-package "SLIME-APPRENTICE-READ"))))
-                  preliminary-symbol)
-                 ;; Otherwise, if a symbol with the name SYMBOL-NAME exists
-                 ;; in *package*, take that.
-                 ((and preliminary-symbol
-                       (symbolp preliminary-symbol)
-                       (find-symbol (symbol-name preliminary-symbol)))))))
-    (when (symbolp preliminary-symbol)
-      (unintern preliminary-symbol (find-package "SLIME-APPRENTICE-READ")))
-    (if actual-symbol
-        (return-description
-         actual-symbol
-         (with-output-to-string (s)
-           (describe-with-apprentice *apprentice*
-                                     actual-symbol
-                                     s)))
-        (if (and preliminary-symbol ; #:foo
-                 (symbolp preliminary-symbol))
-            (return-description
-             preliminary-symbol
-             (with-output-to-string (s)
-               (describe-unknown-symbol *apprentice*
-                                        preliminary-symbol
-                                        s)))
-
-            (return-description
-             symbol-name
-             (with-output-to-string (s)
-               (describe-unknown-symbol *apprentice*
-                                        symbol-name
-                                        s)))))))
+  (let* ((symbol (ignore-errors
+                  (resolve-symbol *apprentice* symbol-name))))
+    (when symbol
+      (return-description
+       symbol
+       (with-output-to-string (s)
+         (describe-with-apprentice *apprentice*
+                                   symbol
+                                   s))))))
