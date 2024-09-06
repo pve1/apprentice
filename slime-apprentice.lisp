@@ -19,7 +19,7 @@
 (defun return-description (object desc)
   (check-type desc string)
   (if (<= (length desc) *max-description-size*)
-      (prog1 (if (and (equal *previous-object* object) ; may be a string if unknown symbol
+      (prog1 (if (and (equal *previous-object* object)
                       (equal *previous-description* desc)
                       (not *force-return-description*))
                  :unchanged
