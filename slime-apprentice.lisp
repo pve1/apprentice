@@ -1,20 +1,15 @@
-;;;; Requires
-;;;;   swank
-;;;;   eclector
-;;;;   "package"
-
 (in-package :slime-apprentice) [*]
 
 (unless (find-package "SLIME-APPRENTICE-READ")
   (make-package "SLIME-APPRENTICE-READ" :use nil))
 
-(defvar *Apprentice* nil)
-(defvar *Max-description-size* 100000)
-(defvar *Force-return-description* nil)
+(defvar *apprentice* nil)
+(defvar *max-description-size* 100000)
+(defvar *force-return-description* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
 
-(defgeneric Describe-with-apprentice (apprentice object stream)
+(defgeneric describe-with-apprentice (apprentice object stream)
   (:method (apprentice object stream)
     (describe object stream)))
 
@@ -40,7 +35,7 @@
                          symbol))))
     (apply fun args)))
 
-(defun Presentation-description (presentation-id)
+(defun presentation-description (presentation-id)
   (let* ((desc (with-output-to-string (s)
                  (describe-with-apprentice
                   *apprentice*
@@ -81,7 +76,7 @@
 (defmethod resolve-symbol (apprentice symbol-name)
   (read-from-string-with-client symbol-name))
 
-(defun Symbol-description (symbol-name)
+(defun symbol-description (symbol-name)
   (check-type symbol-name string)
   (let* ((symbol (ignore-errors
                   (resolve-symbol *apprentice* symbol-name))))
