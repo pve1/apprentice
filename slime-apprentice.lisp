@@ -8,6 +8,8 @@
 (defvar *Apprentice* nil)
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
+(defvar *Buffer-context* nil)
+(defvar *previous-object* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
 

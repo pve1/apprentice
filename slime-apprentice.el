@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-(define-derived-mode slime-apprentice-mode text-mode 
+(define-derived-mode slime-apprentice-mode text-mode
   "Slime apprentice")
 
 (define-key slime-apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
@@ -18,7 +18,10 @@
 (defvar slime-apprentice-update-mode 'idle) ; or 'continuous
 (defvar slime-apprentice-force-update nil)
 (defvar slime-apprentice-describe-timer nil)
+(defvar slime-apprentice-active-in-strings-p nil)
+(defvar slime-apprentice-provide-context '())
 
+(defvar-local slime-apprentice-buffer-context nil)
 (defvar-local slime-apprentice-variable-name nil)
 (defvar-local slime-apprentice-presentation-id nil)
 (defvar-local slime-apprentice-locked-p nil)
@@ -52,7 +55,7 @@
 
 (defun slime-apprentice-buffer-p (buf)
   (let ((mode (buffer-local-value 'major-mode buf)))
-    (eql mode 'slime-apprentice-mode)))    
+    (eql mode 'slime-apprentice-mode)))
 
 (defun slime-apprentice-window-p (win)
   (slime-apprentice-buffer-p (window-buffer win)))
@@ -71,11 +74,12 @@
   (slime-apprentice-reinitialize-timer)
   (message "%s" slime-apprentice-polling-frequency))
 
-(defun slime-apprentice-set-buffer-input (name-or-presentation &optional buffer)
+(defun slime-apprentice-set-buffer-input (name-or-presentation &optional buffer context)
   (unless buffer
     (setf buffer (current-buffer)))
   (with-current-buffer buffer
     (slime-apprentice-check-apprentice-buffer)
+    (setf slime-apprentice-buffer-context context)
     (cond ((integerp name-or-presentation) ; presentation
            (setf slime-apprentice-presentation-id name-or-presentation)
            (setf slime-apprentice-variable-name nil))
@@ -84,18 +88,46 @@
            (setf slime-apprentice-presentation-id nil))
           (t (error "Bad name or presentation.")))))
 
-(defun slime-apprentice-retrieve-description-for-buffer ()
+(defun slime-apprentice-enclosing-form-position ()
   (condition-case nil
+      (save-excursion
+        (up-list -1 t)
+        (when (eql ?\" (char-after (point)))
+          (up-list -1 t))
+        (point))
+    (error nil)))
+
+(defun slime-apprentice-enclosing-form ()
+  (condition-case nil
+      (let ((enclosing-form-position
+             (slime-apprentice-enclosing-form-position)))
+        (save-excursion
+          (up-list -1 t)
+          (when (eql ?\" (char-after (point)))
+            (up-list -1 t))
+          (forward-sexp)
+          (buffer-substring-no-properties
+           enclosing-form-position
+           (point))))))
+
+(defun slime-apprentice-retrieve-description-for-buffer ()
+  (condition-case x
       (cond (slime-apprentice-presentation-id
-             (slime-eval `(cl:let ((slime-apprentice::*force-return-description*
-                                    ,slime-apprentice-force-update))
-                                  (slime-apprentice:presentation-description
-                                   ,slime-apprentice-presentation-id))))
+             (slime-eval
+              `(cl:let ((slime-apprentice::*force-return-description*
+                         ,slime-apprentice-force-update)
+                        (slime-apprentice::*buffer-context*
+                         (cl:quote ,slime-apprentice-buffer-context)))
+                       (slime-apprentice:presentation-description
+                        ,slime-apprentice-presentation-id))))
             (slime-apprentice-variable-name
-             (slime-eval `(cl:let ((slime-apprentice::*force-return-description*
-                                    ,slime-apprentice-force-update))
-                                  (slime-apprentice:symbol-description
-                                   ,slime-apprentice-variable-name))))
+             (slime-eval
+              `(cl:let ((slime-apprentice::*force-return-description*
+                         ,slime-apprentice-force-update)
+                        (slime-apprentice::*buffer-context*
+                         (cl:quote ,slime-apprentice-buffer-context)))
+                       (slime-apprentice:symbol-description
+                        ,slime-apprentice-variable-name))))
             (t (error "Missing variable or presentation.")))
     (error (slime-apprentice-cancel-timer)
            (setf slime-apprentice-describe-timer nil)
@@ -113,7 +145,7 @@
   (interactive)
   (unless buffer
     (setf buffer (current-buffer)))
-  (with-current-buffer buffer 
+  (with-current-buffer buffer
     (slime-apprentice-check-apprentice-buffer)
     (when name-or-presentation
       (slime-apprentice-set-buffer-input name-or-presentation buffer))
@@ -145,10 +177,17 @@
     (when presentation
       (setf presentation-id (slime-presentation-id presentation)))
     (when (or presentation-id
-              (and (not string)
+              (and (or slime-apprentice-active-in-strings-p
+                       (not string))
                    symbol))
-      (slime-apprentice-set-buffer-input (or presentation-id symbol)
-                                         slime-apprentice-buffer-name))))
+      (slime-apprentice-set-buffer-input
+       (or presentation-id symbol)
+       slime-apprentice-buffer-name
+       (when slime-apprentice-provide-context
+         `(,@(when (member 'enclosing-form slime-apprentice-provide-context)
+               (list :enclosing-form (slime-apprentice-enclosing-form)))
+           ,@(when (member 'filename slime-apprentice-provide-context)
+               (list :filename (buffer-file-name)))))))))
 
 (defun slime-apprentice-update-if-live-window (window)
   (let ((buf (window-buffer window)))
@@ -168,8 +207,8 @@
   (interactive)
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'continuous)
-  (setf slime-apprentice-describe-timer 
-        (run-with-timer 0 
+  (setf slime-apprentice-describe-timer
+        (run-with-timer 0
                         slime-apprentice-polling-frequency
                         'slime-apprentice-timer-function))
   (message "Continuous mode."))
@@ -178,7 +217,7 @@
   (interactive)
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'idle)
-  (setf slime-apprentice-describe-timer 
+  (setf slime-apprentice-describe-timer
         (run-with-idle-timer slime-apprentice-polling-frequency
                              t
                              'slime-apprentice-timer-function))
@@ -204,7 +243,7 @@
 (defun slime-apprentice-lock-apprentice ()
   (interactive)
   (slime-apprentice-check-apprentice-buffer)
-  (let ((buffer-name (format "%s:%s" 
+  (let ((buffer-name (format "%s:%s"
                              slime-apprentice-buffer-name
                              slime-apprentice-variable-name)))
     (cond ((get-buffer buffer-name)
