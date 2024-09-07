@@ -111,7 +111,7 @@
            (point))))))
 
 (defun slime-apprentice-retrieve-description-for-buffer ()
-  (condition-case x
+  (condition-case nil
       (cond (slime-apprentice-presentation-id
              (slime-eval
               `(cl:let ((slime-apprentice::*force-return-description*
