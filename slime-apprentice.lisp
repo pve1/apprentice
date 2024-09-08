@@ -3,6 +3,7 @@
 (defvar *apprentice* nil)
 (defvar *max-description-size* 100000)
 (defvar *force-return-description* nil)
+(defvar *buffer-context* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
 
@@ -14,7 +15,7 @@
 (defun return-description (object desc)
   (check-type desc string)
   (if (<= (length desc) *max-description-size*)
-      (prog1 (if (and (equal *previous-object* object) ; may be a string if unknown symbol
+      (prog1 (if (and (equal *previous-object* object)
                       (equal *previous-description* desc)
                       (not *force-return-description*))
                  :unchanged
