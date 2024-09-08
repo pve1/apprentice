@@ -13,12 +13,18 @@
 (define-key slime-apprentice-mode-map (kbd "-") 'slime-apprentice-slower-polling)
 (define-key slime-apprentice-mode-map (kbd "m") 'slime-apprentice-toggle-update-mode)
 
-(defvar slime-apprentice-polling-frequency 0.4)
+(defvar slime-apprentice-polling-frequency 0.5)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
 (defvar slime-apprentice-update-mode 'idle) ; or 'continuous
 (defvar slime-apprentice-force-update nil)
 (defvar slime-apprentice-describe-timer nil)
-(defvar slime-apprentice-active-in-strings-p nil)
+(defvar slime-apprentice-active-in-strings nil)
+
+;; Valid members are: 
+;; - toplevel-form
+;; - enclosing-form
+;; - package
+;; - filename
 (defvar slime-apprentice-provide-context '())
 
 (defvar-local slime-apprentice-buffer-context nil)
@@ -88,28 +94,6 @@
            (setf slime-apprentice-presentation-id nil))
           (t (error "Bad name or presentation.")))))
 
-(defun slime-apprentice-enclosing-form-position ()
-  (condition-case nil
-      (save-excursion
-        (up-list -1 t)
-        (when (eql ?\" (char-after (point)))
-          (up-list -1 t))
-        (point))
-    (error nil)))
-
-(defun slime-apprentice-enclosing-form ()
-  (condition-case nil
-      (let ((enclosing-form-position
-             (slime-apprentice-enclosing-form-position)))
-        (save-excursion
-          (up-list -1 t)
-          (when (eql ?\" (char-after (point)))
-            (up-list -1 t))
-          (forward-sexp)
-          (buffer-substring-no-properties
-           enclosing-form-position
-           (point))))))
-
 (defun slime-apprentice-retrieve-description-for-buffer ()
   (condition-case nil
       (cond (slime-apprentice-presentation-id
@@ -168,6 +152,45 @@
                     (slime-apprentice-create-apprentice-buffer))))
     (slime-apprentice-update-apprentice-buffer buffer name-or-presentation)))
 
+(defun slime-apprentice-enclosing-form-position ()
+  (condition-case nil
+      (save-excursion
+        (up-list -1 t)
+        (when (eql ?\" (char-after (point)))
+          (up-list -1 t))
+        (point))
+    (error nil)))
+
+(defun slime-apprentice-enclosing-form ()
+  (condition-case nil
+      (let ((enclosing-form-position
+             (slime-apprentice-enclosing-form-position)))
+        (save-excursion
+          (up-list -1 t)
+          (when (eql ?\" (char-after (point)))
+            (up-list -1 t))
+          (forward-sexp)
+          (buffer-substring-no-properties
+           enclosing-form-position
+           (point))))
+    (error nil)))
+
+(defun slime-apprentice-toplevel-form ()
+  (condition-case nil
+      (save-excursion
+        (let (begin)
+          (beginning-of-defun)
+          (setf begin (point))
+          (forward-list)
+          (buffer-substring-no-properties
+           begin (point))))
+    (error nil)))
+
+(defun slime-apprentice-package ()
+  (condition-case nil
+      (slime-current-package)
+    (error nil)))
+
 (defun slime-apprentice-set-input-from-point-maybe ()
   (let ((string (ignore-errors (thing-at-point 'string t)))
         (symbol (thing-at-point 'symbol t))
@@ -177,7 +200,7 @@
     (when presentation
       (setf presentation-id (slime-presentation-id presentation)))
     (when (or presentation-id
-              (and (or slime-apprentice-active-in-strings-p
+              (and (or slime-apprentice-active-in-strings
                        (not string))
                    symbol))
       (slime-apprentice-set-buffer-input
@@ -186,6 +209,10 @@
        (when slime-apprentice-provide-context
          `(,@(when (member 'enclosing-form slime-apprentice-provide-context)
                (list :enclosing-form (slime-apprentice-enclosing-form)))
+           ,@(when (member 'toplevel-form slime-apprentice-provide-context)
+               (list :toplevel-form (slime-apprentice-toplevel-form)))
+           ,@(when (member 'package slime-apprentice-provide-context)
+               (list :package (slime-apprentice-package)))
            ,@(when (member 'filename slime-apprentice-provide-context)
                (list :filename (buffer-file-name)))))))))
 
@@ -270,4 +297,3 @@
   (let ((slime-apprentice-force-update t))
     (slime-apprentice-update-the-apprentice-buffer))
   (display-buffer slime-apprentice-buffer-name))
-
