@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 
-(define-derived-mode slime-apprentice-mode text-mode 
+(define-derived-mode slime-apprentice-mode text-mode
   "Slime apprentice")
 
 (define-key slime-apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
@@ -52,7 +52,7 @@
 
 (defun slime-apprentice-buffer-p (buf)
   (let ((mode (buffer-local-value 'major-mode buf)))
-    (eql mode 'slime-apprentice-mode)))    
+    (eql mode 'slime-apprentice-mode)))
 
 (defun slime-apprentice-window-p (win)
   (slime-apprentice-buffer-p (window-buffer win)))
@@ -113,7 +113,7 @@
   (interactive)
   (unless buffer
     (setf buffer (current-buffer)))
-  (with-current-buffer buffer 
+  (with-current-buffer buffer
     (slime-apprentice-check-apprentice-buffer)
     (when name-or-presentation
       (slime-apprentice-set-buffer-input name-or-presentation buffer))
@@ -168,8 +168,8 @@
   (interactive)
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'continuous)
-  (setf slime-apprentice-describe-timer 
-        (run-with-timer 0 
+  (setf slime-apprentice-describe-timer
+        (run-with-timer 0
                         slime-apprentice-polling-frequency
                         'slime-apprentice-timer-function))
   (message "Continuous mode."))
@@ -178,7 +178,7 @@
   (interactive)
   (ignore-errors (cancel-timer slime-apprentice-describe-timer))
   (setf slime-apprentice-update-mode 'idle)
-  (setf slime-apprentice-describe-timer 
+  (setf slime-apprentice-describe-timer
         (run-with-idle-timer slime-apprentice-polling-frequency
                              t
                              'slime-apprentice-timer-function))
@@ -204,7 +204,7 @@
 (defun slime-apprentice-lock-apprentice ()
   (interactive)
   (slime-apprentice-check-apprentice-buffer)
-  (let ((buffer-name (format "%s:%s" 
+  (let ((buffer-name (format "%s:%s"
                              slime-apprentice-buffer-name
                              slime-apprentice-variable-name)))
     (cond ((get-buffer buffer-name)
