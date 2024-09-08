@@ -2,6 +2,7 @@
 (defpackage #:slime-apprentice
   (:use #:cl)
   (:export "*APPRENTICE*"
+           "*BUFFER-CONTEXT*"
            "*MAX-DESCRIPTION-SIZE*"
            "*FORCE-RETURN-DESCRIPTION*"
            "DESCRIPTION"
