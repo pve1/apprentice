@@ -6,6 +6,6 @@
 
 (in-package :slime-apprentice)
 
-(define-symbol-macro [*]
+(define-symbol-macro cx
     (eval-when (:compile-toplevel :load-toplevel :execute)
       (setf *readtable* (capitalized-export:make-capitalized-export-readtable))))
