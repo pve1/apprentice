@@ -224,45 +224,6 @@
       ,@(when (member 'filename slime-apprentice-provide-context)
           (list :filename (buffer-file-name))))))
 
-(defun slime-apprentice-enclosing-form-position ()
-  (condition-case nil
-      (save-excursion
-        (up-list -1 t)
-        (when (eql ?\" (char-after (point)))
-          (up-list -1 t))
-        (point))
-    (error nil)))
-
-(defun slime-apprentice-enclosing-form ()
-  (condition-case nil
-      (let ((enclosing-form-position
-             (slime-apprentice-enclosing-form-position)))
-        (save-excursion
-          (up-list -1 t)
-          (when (eql ?\" (char-after (point)))
-            (up-list -1 t))
-          (forward-sexp)
-          (buffer-substring-no-properties
-           enclosing-form-position
-           (point))))
-    (error nil)))
-
-(defun slime-apprentice-toplevel-form ()
-  (condition-case nil
-      (save-excursion
-        (let (begin)
-          (beginning-of-defun)
-          (setf begin (point))
-          (forward-list)
-          (buffer-substring-no-properties
-           begin (point))))
-    (error nil)))
-
-(defun slime-apprentice-package ()
-  (condition-case nil
-      (slime-current-package)
-    (error nil)))
-
 (defun slime-apprentice-set-input-from-point-maybe ()
   (let ((string (ignore-errors (thing-at-point 'string t)))
         (symbol (thing-at-point 'symbol t))
