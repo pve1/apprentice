@@ -121,12 +121,10 @@
                        (slime-apprentice:symbol-description
                         ,slime-apprentice-variable-name))))
             (slime-apprentice-form-string
-             ;; Ensure the package is fixed this buffer. This should not be needed
+             ;; Ensure the package is fixed this buffer. This should not be needed.
              (unless slime-apprentice-package
-               (error "No package set.")
-               ;; (setf slime-apprentice-package
-               ;;      (slime-eval `(cl:package-name cl:*package*))
-               )
+               (setf slime-apprentice-package
+                     (slime-eval `(cl:package-name cl:*package*))))
              (slime-eval
               `(cl:let ((slime-apprentice::*force-return-description*
                          ,slime-apprentice-force-update)
