@@ -15,11 +15,21 @@
 (defmethod describe-with-apprentice ((appr apprentice-gathering)
                                      (object symbol)
                                      stream)
-  (dolist (a (apprentices appr))
-    (when (describe-with-apprentice a object stream)
-      (fresh-line stream)
-      (princ (apprentice-gathering-divider appr) stream)
-      (terpri stream))))
+  (let (divider-printed)
+    (flet ((print-divider-maybe ()
+             (unless divider-printed
+               (fresh-line stream)
+               (princ (apprentice-gathering-divider appr) stream)
+               (fresh-line stream)
+               (setf divider-printed t))))
+      (dolist (a (apprentices appr))
+        (print-divider-maybe)
+        (when (describe-with-apprentice a object stream)
+          (fresh-line stream)
+          (setf divider-printed nil)))
+      ;; Print one here as well, to make it look consistent,
+      ;; regardless of what the last apprentice printed.
+      (print-divider-maybe))))
 
 (defun apprentice-gathering (&rest apprentices)
   (make-instance 'apprentice-gathering
