@@ -36,16 +36,16 @@
 
 (defvar slime-apprentice-help-line
   (let ((s " [q]:quit [l|L]:lock [-|+]:freq [m]:mode ")
-        (s2 "\n\n"))
-    (setf s (propertize s 'face 'fringe))
-    (setf s2 (propertize s2 'face 'default))
+        (s2 "\n"))
+    (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
+    (setf s2 (propertize s2 'face 'default 'font-lock-face 'default))
     (concat s s2)))
 
 (defvar slime-apprentice-locked-help-line
   (let ((s " [q]:quit [-]|[+]:freq [m]:mode ")
-        (s2 "\n\n"))
-    (setf s (propertize s 'face 'fringe))
-    (setf s2 (propertize s2 'face 'default))
+        (s2 "\n"))
+    (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
+    (setf s2 (propertize s2 'font-lock-face 'default 'font-lock-face 'default))
     (concat s s2)))
 
 (defun slime-apprentice-insert-help-line ()
