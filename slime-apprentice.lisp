@@ -52,8 +52,8 @@
       (return-description presentation-id desc))))
 
 (defmacro with-eclector-client (client &body body)
-  `(let((*read-eval* nil)
-        (eclector.base:*client* ,client))
+  `(let ((*read-eval* nil)
+         (eclector.base:*client* ,client))
      ,@body))
 
 (defmethod eclector.reader:check-symbol-token ((client (eql 'default-resolve-symbol))
