@@ -9,8 +9,10 @@
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
 (defvar *Buffer-context* nil)
+(defvar *Description-stream* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
+(defvar *description-properties* nil)
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:method (apprentice object stream)
@@ -21,13 +23,15 @@
 
 ;; May return a string, :unchanged or :max-size-exceeded.
 (defun return-description (object desc)
-  (check-type desc string)
+  (check-type desc (or string cons))
   (if (<= (length desc) *max-description-size*)
       (prog1 (if (and (equal *previous-object* object)
                       (equal *previous-description* desc)
                       (not *force-return-description*))
                  :unchanged
-                 desc)
+                 (if *description-properties*
+                     (list desc *description-properties*)
+                     desc))
         (setf *previous-object* object
               *previous-description* desc))
       :max-size-exceeded))
@@ -102,14 +106,16 @@
 (defun Symbol-description (symbol-name)
   (check-type symbol-name string)
   (let* ((symbol (ignore-errors
-                  (resolve-symbol *apprentice* symbol-name))))
+                  (resolve-symbol *apprentice* symbol-name)))
+         (*description-properties* nil))
     (when symbol
       (return-description
        symbol
        (with-output-to-string (s)
-         (describe-with-apprentice *apprentice*
-                                   symbol
-                                   s))))))
+         (let ((*description-stream* s))
+           (describe-with-apprentice *apprentice*
+                                     symbol
+                                     s)))))))
 
 (defgeneric Read-from-string-with-apprentice (apprentice string)
   (:method (apprentice string)
@@ -129,12 +135,15 @@
 ;;; Package-designator is the string returned by
 ;;; (slime-current-package). It must be READ to get the real
 ;;; package-designator.
+
 (defgeneric Describe-form-with-apprentice (apprentice
                                            form-string
                                            package-designator)
   (:method (apprentice (form-string string) package-designator)
     (with-output-to-string (*standard-output*)
-      (let ((*error-output* *standard-output*))
+      (let ((*error-output* *standard-output*)
+            (*description-stream* *standard-output*)
+            (*description-properties* nil))
         (handler-case
             (let* ((real-package-designator
                      (read-package-designator
@@ -163,4 +172,3 @@
    (describe-form-with-apprentice *apprentice*
                                   form-string
                                   package-designator)))
-

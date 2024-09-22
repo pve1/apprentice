@@ -12,6 +12,10 @@
 (define-key slime-apprentice-mode-map (kbd "+") 'slime-apprentice-faster-polling)
 (define-key slime-apprentice-mode-map (kbd "-") 'slime-apprentice-slower-polling)
 (define-key slime-apprentice-mode-map (kbd "m") 'slime-apprentice-toggle-update-mode)
+(define-key slime-apprentice-mode-map [?	] 'slime-apprentice-next-button) ; tab
+(define-key slime-apprentice-mode-map
+  (kbd "<backtab>") 'slime-apprentice-previous-button) ; s-tab
+
 
 (defvar slime-apprentice-polling-frequency 0.5)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
@@ -25,6 +29,9 @@
 ;; - enclosing-form
 ;; - package
 ;; - filename
+;; - point
+;; - current-line
+;; - max-line
 (defvar slime-apprentice-provide-context '())
 
 (defvar-local slime-apprentice-buffer-context nil)
@@ -53,9 +60,134 @@
       (insert slime-apprentice-locked-help-line)
     (insert slime-apprentice-help-line)))
 
-(defun slime-apprentice-insert (string)
-  (slime-apprentice-insert-help-line)
-  (insert string))
+(defun slime-apprentice-insert (string &optional properties)
+  (let ((offset (point-max)))
+    (insert string)
+    (when properties
+      (dolist (prop properties)
+        (cl-case (car prop)
+          (slime-apprentice::lisp-button
+           (slime-apprentice-insert-lisp-button prop))
+          (slime-apprentice::elisp-button
+           (slime-apprentice-insert-elisp-button prop)))))
+    (goto-char (point-min))
+    ;; Insert the help line last, so that the property offsets work
+    ;; directly.
+    (slime-apprentice-insert-help-line)))
+
+(defun slime-apprentice-insert-elisp-button (prop)
+  (cl-destructuring-bind (tag begin end label when-clicked-form &optional face)
+      prop
+    (setf face (or face 'font-lock-type-face))
+    (let ((keymap (make-sparse-keymap))
+          (buf (current-buffer)))
+      (define-key keymap (kbd "RET")
+        (lambda ()
+          (interactive)
+          (let ((form (car (read-from-string when-clicked-form))))
+            (message "%S" form)
+            (eval form))))
+      ;; Begin and end are zero-based, so we add one.
+      (put-text-property (1+ begin) (1+ end) 'keymap keymap)
+      (put-text-property (1+ begin) (1+ end)
+                         (if font-lock-mode
+                             'font-lock-face
+                           'face)
+                         face)
+      (put-text-property (1+ begin) (1+ end)
+                         'slime-apprentice-button t))))
+
+(defun slime-apprentice-insert-lisp-button (prop)
+  (cl-destructuring-bind (tag begin end label when-clicked-form &optional face)
+      prop
+    (setf face (or face 'font-lock-keyword-face))
+    (let ((keymap (make-sparse-keymap))
+          (buf (current-buffer)))
+      (define-key keymap (kbd "RET")
+        (lambda ()
+          (interactive)
+          (message "%S" when-clicked-form)
+          (slime-eval when-clicked-form)))
+      ;; Begin and end are zero-based, so we add one.
+      (put-text-property (1+ begin) (1+ end) 'keymap keymap)
+      (put-text-property (1+ begin) (1+ end)
+                         (if font-lock-mode
+                             'font-lock-face
+                           'face)
+                         face)
+      (put-text-property (1+ begin) (1+ end)
+                         'slime-apprentice-button t))))
+
+(defun slime-apprentice-next-button ()
+  (interactive)
+  (let ((original-pos (point)))
+    ;; If point on button, move out.
+    (when (and (not (= (point) (point-max)))
+               (text-property-any (point)
+                                  (1+ (point))
+                                  'slime-apprentice-button t))
+      (goto-char (next-single-char-property-change
+                  (point)
+                  'slime-apprentice-button)))
+    ;; No button in sight?
+    (when (= (point-max)
+             (next-single-char-property-change
+              (point)
+              'slime-apprentice-button))
+      (goto-char (point-min)))
+    (let ((button (next-single-char-property-change
+                   (point)
+                   'slime-apprentice-button)))
+      (if (= (point-max) button)
+          (goto-char original-pos)
+        (goto-char button)))))
+
+(defun slime-apprentice-previous-button ()
+  (interactive)
+  (let ((original-pos (point)))
+    ;; If point on button, move out (backwards).
+    (when (and (not (= (point) (point-max)))
+               (text-property-any (point)
+                                  (1+ (point))
+                                  'slime-apprentice-button t))
+      (goto-char (previous-single-char-property-change
+                  (point)
+                  'slime-apprentice-button)))
+    ;; No button in sight?
+    (when (= (point-min)
+             (previous-single-char-property-change
+              (point)
+              'slime-apprentice-button))
+      (goto-char (point-max)))
+    (let ((button (previous-single-char-property-change
+                   (point)
+                   'slime-apprentice-button)))
+      (if (= (point-min) button)
+          (goto-char original-pos)
+        (goto-char button)))))
+
+(defun slime-apprentice-previous-button ()
+  (interactive)
+  (let ((n 0))
+    (when (= (point) (point-min))
+      (goto-char (point-max)))
+    (when (and (not (= (point) (point-max)))
+               (text-property-any (point)
+                                  (1+ (point))
+                                  'slime-apprentice-button t))
+      (goto-char (previous-single-char-property-change
+                  (point)
+                  'slime-apprentice-button))
+      (cl-incf n))
+    (condition-case nil
+        (progn
+          (goto-char (previous-single-char-property-change
+                      (point) 'slime-apprentice-button))
+          (cl-incf n)
+          (when (< n 2)
+            (goto-char (previous-single-char-property-change
+                        (point) 'slime-apprentice-button))))
+      (error (goto-char (point-max))))))
 
 (defun slime-apprentice-check-apprentice-buffer ()
   (unless (eql major-mode 'slime-apprentice-mode)
@@ -146,6 +278,20 @@
         (slime-apprentice-mode))
       buffer)))
 
+(defface slime-apprentice-divider `((t :foreground "Chocolate1")) "")
+
+(defvar slime-apprentice-update-apprentice-buffer-hook
+  (list (lambda ()
+          (save-excursion
+            (goto-char (point-min))
+            (end-of-line)
+            (put-text-property 1 (point) 'face 'fringe))
+          (setf font-lock-defaults '(nil))
+          (font-lock-mode 1)
+          (font-lock-add-keywords
+           nil '(("-------+" . 'slime-apprentice-divider)))
+          )))
+
 (defun slime-apprentice-update-apprentice-buffer (&optional buffer input)
   (interactive)
   (unless buffer
@@ -165,8 +311,12 @@
                (slime-apprentice-insert "[Max size exceeded]"))
               ((stringp results)
                (erase-buffer)
-               (slime-apprentice-insert results)))))
-    (goto-char (point-min))))
+               (slime-apprentice-insert results))
+              ((listp results)          ; with properties
+               (erase-buffer)
+               (slime-apprentice-insert (car results) (cadr results))))))
+    (goto-char (point-min))
+    (run-hooks 'slime-apprentice-update-apprentice-buffer-hook)))
 
 (defun slime-apprentice-update-the-apprentice-buffer (&optional input)
   (interactive)
@@ -215,7 +365,13 @@
 
 (defun slime-apprentice-build-context ()
   (when slime-apprentice-provide-context
-    `(,@(when (member 'enclosing-form slime-apprentice-provide-context)
+    `(,@(when (member 'point slime-apprentice-provide-context)
+          (list :point (point)))
+      ,@(when (member 'current-line slime-apprentice-provide-context)
+          (list :current-line (line-number-at-pos)))
+      ,@(when (member 'max-line slime-apprentice-provide-context)
+          (list :max-line (line-number-at-pos (point-max))))
+      ,@(when (member 'enclosing-form slime-apprentice-provide-context)
           (list :enclosing-form (slime-apprentice-enclosing-form)))
       ,@(when (member 'toplevel-form slime-apprentice-provide-context)
           (list :toplevel-form (slime-apprentice-toplevel-form)))
