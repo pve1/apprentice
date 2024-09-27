@@ -1,7 +1,46 @@
 ;; -*- lexical-binding: t -*-
-
 (define-derived-mode slime-apprentice-mode text-mode
   "Slime apprentice")
+
+(defvar slime-apprentice-lisp-font-lock-defaults
+  `((lisp-cl-font-lock-keywords
+     lisp-cl-font-lock-keywords-1
+     lisp-cl-font-lock-keywords-2)
+    nil
+    t
+    nil
+    nil
+	(font-lock-mark-block-function . mark-defun)
+    (font-lock-extra-managed-props help-echo)
+    (font-lock-syntactic-face-function
+     . lisp-font-lock-syntactic-face-function)))
+
+(defun slime-apprentice-fontify-region-using-temp-buffer (b e)
+  (interactive "r")
+  (let* ((text (buffer-substring-no-properties b e))
+         (font-locked (with-temp-buffer
+                        (delay-mode-hooks (lisp-mode))
+                        (font-lock-mode 1)
+                        (insert text)
+                        (font-lock-fontify-buffer)
+                        (buffer-string))))
+    (delete-region b e)
+    (goto-char b)
+    (insert font-locked)))
+
+;; Simpler, but fontification isn't complete. Keywords are not
+;; colored, and only "eclector" in eclector.reader:check-symbol-token.
+(defun slime-apprentice-fontify-lisp-region (property)
+  (cl-destructuring-bind (tag begin end) property
+    (let* ((font-lock-defaults
+            slime-apprentice-lisp-font-lock-defaults))
+      (remove-list-of-text-properties
+       begin end '(face font-lock-face))
+      (font-lock-fontify-region begin end))))
+
+(defun slime-apprentice-fontify-lisp-region (property)
+  (cl-destructuring-bind (tag begin end) property
+    (slime-apprentice-fontify-region-using-temp-buffer begin end)))
 
 (define-key slime-apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
 (define-key slime-apprentice-mode-map (kbd "l") 'slime-apprentice-lock-apprentice)
@@ -16,6 +55,10 @@
 (define-key slime-apprentice-mode-map
   (kbd "<backtab>") 'slime-apprentice-previous-button) ; s-tab
 
+(defface slime-apprentice-dim-face `((t :foreground "Gray50" :weight normal))
+  "Dim color")
+(defface slime-apprentice-divider `((t :foreground "Chocolate1"))
+  "Divider color")
 
 (defvar slime-apprentice-polling-frequency 0.5)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
@@ -23,6 +66,8 @@
 (defvar slime-apprentice-force-update nil)
 (defvar slime-apprentice-describe-timer nil)
 (defvar slime-apprentice-active-in-strings nil)
+(defvar slime-apprentice-update-apprentice-buffer-hook
+  nil)
 
 ;; Valid members are:
 ;; - toplevel-form
@@ -69,24 +114,29 @@
           (slime-apprentice::lisp-button
            (slime-apprentice-insert-lisp-button prop))
           (slime-apprentice::elisp-button
-           (slime-apprentice-insert-elisp-button prop)))))
+           (slime-apprentice-insert-elisp-button prop))
+          (slime-apprentice::fontify-region
+           (slime-apprentice-fontify-lisp-region prop)))))
     (goto-char (point-min))
     ;; Insert the help line last, so that the property offsets work
-    ;; directly.
+    ;; directly. Consider: offsets could be relative.
     (slime-apprentice-insert-help-line)))
 
 (defun slime-apprentice-insert-elisp-button (prop)
-  (cl-destructuring-bind (tag begin end label when-clicked-form &optional face)
+  (cl-destructuring-bind (tag begin end label when-clicked-form
+                              &optional face redisplay)
       prop
     (setf face (or face 'font-lock-type-face))
     (let ((keymap (make-sparse-keymap))
-          (buf (current-buffer)))
+          (buf (current-buffer))) ; apprentice buffer
       (define-key keymap (kbd "RET")
         (lambda ()
           (interactive)
           (let ((form (car (read-from-string when-clicked-form))))
             (message "%S" form)
-            (eval form))))
+            (eval form)
+            (when redisplay
+              (slime-apprentice-update-apprentice-buffer buf)))))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
       (put-text-property (1+ begin) (1+ end)
@@ -98,16 +148,25 @@
                          'slime-apprentice-button t))))
 
 (defun slime-apprentice-insert-lisp-button (prop)
-  (cl-destructuring-bind (tag begin end label when-clicked-form &optional face)
+  (cl-destructuring-bind (tag begin end label when-clicked-form
+                              &optional face redisplay)
       prop
     (setf face (or face 'font-lock-keyword-face))
     (let ((keymap (make-sparse-keymap))
-          (buf (current-buffer)))
+          (buf (current-buffer))) ; apprentice buffer
       (define-key keymap (kbd "RET")
         (lambda ()
           (interactive)
-          (message "%S" when-clicked-form)
-          (slime-eval when-clicked-form)))
+          (message "%s" when-clicked-form)
+          (if (stringp when-clicked-form)
+              (slime-eval (progn `(cl:eval
+                                   (cl:read-from-string
+                                    ,when-clicked-form))
+                                 t)) ; may otherwise return unreadable
+                                     ; objects
+            (slime-eval when-clicked-form))
+          (when redisplay
+            (slime-apprentice-update-apprentice-buffer buf))))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
       (put-text-property (1+ begin) (1+ end)
@@ -277,20 +336,6 @@
       (unless (eq major-mode 'slime-apprentice-mode)
         (slime-apprentice-mode))
       buffer)))
-
-(defface slime-apprentice-divider `((t :foreground "Chocolate1")) "")
-
-(defvar slime-apprentice-update-apprentice-buffer-hook
-  (list (lambda ()
-          (save-excursion
-            (goto-char (point-min))
-            (end-of-line)
-            (put-text-property 1 (point) 'face 'fringe))
-          (setf font-lock-defaults '(nil))
-          (font-lock-mode 1)
-          (font-lock-add-keywords
-           nil '(("-------+" . 'slime-apprentice-divider)))
-          )))
 
 (defun slime-apprentice-update-apprentice-buffer (&optional buffer input)
   (interactive)
@@ -508,3 +553,4 @@
     (let ((slime-apprentice-force-update t))
       (slime-apprentice-update-the-apprentice-buffer))
     (display-buffer slime-apprentice-buffer-name)))
+
