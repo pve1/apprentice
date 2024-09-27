@@ -9,20 +9,20 @@
                 :accessor apprentices
                 :initform nil)))
 
-(defmethod Apprentice-gathering-divider ((appr apprentice-gathering))
+(defmethod Apprentice-gathering-divider ((ap apprentice-gathering))
   "------------------------------------------------------------")
 
-(defmethod describe-with-apprentice ((appr apprentice-gathering)
+(defmethod describe-with-apprentice ((ap apprentice-gathering)
                                      (object symbol)
                                      stream)
   (let (divider-printed)
     (flet ((print-divider-maybe ()
              (unless divider-printed
                (fresh-line stream)
-               (princ (apprentice-gathering-divider appr) stream)
+               (princ (apprentice-gathering-divider ap) stream)
                (fresh-line stream)
                (setf divider-printed t))))
-      (dolist (a (apprentices appr))
+      (dolist (a (apprentices ap))
         (print-divider-maybe)
         (when (describe-with-apprentice a object stream)
           (fresh-line stream)

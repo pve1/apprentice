@@ -69,10 +69,11 @@
           ((not need)
            (last-result object)))))
 
-(defmethod describe-with-apprentice ((appr caching-apprentice)
+(defmethod describe-with-apprentice ((ap caching-apprentice)
                                      object
                                      stream)
-  (let ((result (apprentice-update-maybe appr object)))
+  (let* ((*standard-output* stream)
+         (result (apprentice-update-maybe ap object)))
     (when result
       (princ result stream)
       t)))

@@ -53,7 +53,7 @@
         :when (search string (package-name p))
         :collect p))
 
-(defmethod apprentice-update ((appr apropos-apprentice)
+(defmethod apprentice-update ((ap apropos-apprentice)
                               (object symbol))
   (let* ((package-indicator (get object 'package-indicator))
          (symbol-package (symbol-package object))
@@ -76,7 +76,7 @@
                       (package-name symbol-package)))
           (pushnew pkg interesting-packages)))
       (let ((interesting-symbol-function
-              (interesting-symbol-function appr)))
+              (interesting-symbol-function ap)))
         (dolist (pkg interesting-packages)
           (dolist (sym (apropos-list object pkg (not (eq pkg *package*))))
             (unless (eq sym object)

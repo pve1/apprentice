@@ -37,9 +37,10 @@
           (when (equal "lisp" (pathname-type file))
             (funcall fn file))))))
 
-(defmethod apprentice-description-heading ((appr grep-apprentice))
+(defmethod apprentice-description-heading ((ap grep-apprentice))
   "Mentions: ")
 
+;;; Note: depends on slime-flash-region
 (defmethod apprentice-update ((apprentice grep-apprentice)
                               (object symbol))
   (when (<= 2 (length (symbol-name object)))

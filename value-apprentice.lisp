@@ -6,7 +6,7 @@
 (defclass Value-apprentice ()
   ())
 
-(defmethod describe-with-apprentice ((appr value-apprentice)
+(defmethod describe-with-apprentice ((ap value-apprentice)
                                      (object symbol)
                                      stream)
   (cond ((and (not (keywordp object))
