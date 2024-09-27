@@ -6,7 +6,8 @@
 (defmethod put-button-here (apprentice button-type label when-clicked
                             &key (stream *standard-output*)
                                  (offset 0)
-                                 face)
+                                 face
+                                 redisplay)
   (let ((here (file-position stream))
         (there)
         (offset* (typecase offset
@@ -22,27 +23,32 @@
                 (+ there offset*)
                 label
                 when-clicked
-                face)
+                face
+                redisplay)
           *description-properties*)))
 
 (defmethod put-lisp-button-here (apprentice label when-clicked
                                  &key (stream *standard-output*)
                                       (offset 0)
-                                      face)
+                                      face
+                                      redisplay)
   (put-button-here apprentice 'lisp-button label when-clicked
                    :face face
                    :offset offset
-                   :stream stream))
+                   :stream stream
+                   :redisplay redisplay))
 
 ;; Fixme: Depends on internal swank function.
 (defmethod put-elisp-button-here (apprentice label when-clicked
                                   &key (stream *standard-output*)
                                        (offset 0)
-                                       face)
+                                       face
+                                       redisplay)
   (put-button-here apprentice
                    'elisp-button
                    label
                    (swank::process-form-for-emacs when-clicked)
                    :face face
                    :offset offset
-                   :stream stream))
+                   :stream stream
+                   :redisplay redisplay))

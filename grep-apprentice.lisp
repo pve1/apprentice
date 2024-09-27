@@ -48,7 +48,8 @@
           (string (symbol-name object))
           (buffer-context-filename
             (getf *buffer-context* :filename))
-          (results))
+          (results)
+          (offset *standard-output*))
       (with-output-to-string (*standard-output*)
         (if (recursive apprentice)
             (grep-apprentice-walk-lisp-files
@@ -68,7 +69,8 @@
               (push (list (enough-namestring file (or (path apprentice)
                                                       buffer-context-filename
                                                       *default-pathname-defaults*))
-                          count)
+                          count
+                          (namestring file))
                     results))))
         (fresh-line)
         (princ "Mentions: ")
@@ -76,5 +78,25 @@
           (setf results (sort results #'> :key #'second))
           (terpri)
           (terpri)
-          (format t "~:{~A: ~A~%~}" results)
+          (dolist  (r results)
+            (put-elisp-button-here
+             apprentice
+             (format nil "~A: ~A"
+                     (first r)
+                     (second r))
+             `(progn (find-file-other-window ,(third r))
+                     (condition-case
+                      nil
+                      (progn
+                        (search-forward ,(symbol-name object))
+                        (slime-flash-region
+                         (match-beginning 0)
+                         (match-end 0)
+                         0.5)
+                        (next-line)
+                        (beginning-of-line))
+                      (error (beginning-of-buffer)))
+                     (other-window 1))
+             :offset offset)
+            (terpri))
           (fresh-line))))))
