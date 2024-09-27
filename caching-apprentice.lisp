@@ -21,8 +21,7 @@
                 :initform nil)
    (busy-result :initarg :busy-result
                 :accessor busy-result
-                :initform " ...
-")))
+                :initform " ... ")))
 
 (defmethod apprentice-same-input-as-last-time-p (object input)
   (equal (last-input object) input))
