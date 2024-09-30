@@ -30,6 +30,7 @@
 
 ;; Simpler, but fontification isn't complete. Keywords are not
 ;; colored, and only "eclector" in eclector.reader:check-symbol-token.
+
 (defun slime-apprentice-fontify-lisp-region (property)
   (cl-destructuring-bind (tag begin end) property
     (let* ((font-lock-defaults
@@ -84,6 +85,7 @@
 (defvar-local slime-apprentice-presentation-id nil)
 (defvar-local slime-apprentice-form-string nil)
 (defvar-local slime-apprentice-package nil)
+(defvar-local slime-apprentice-looking-at nil)
 (defvar-local slime-apprentice-locked-p nil)
 
 (defvar slime-apprentice-help-line
@@ -105,6 +107,7 @@
       (insert slime-apprentice-locked-help-line)
     (insert slime-apprentice-help-line)))
 
+;; "Append"?
 (defun slime-apprentice-insert (string &optional properties)
   (let ((offset (point-max)))
     (insert string)
@@ -116,7 +119,8 @@
           (slime-apprentice::elisp-button
            (slime-apprentice-insert-elisp-button prop))
           (slime-apprentice::fontify-region
-           (slime-apprentice-fontify-lisp-region prop)))))
+           (slime-apprentice-fontify-lisp-region prop))
+          (t (error "Bad property %s" prop)))))
     (goto-char (point-min))
     ;; Insert the help line last, so that the property offsets work
     ;; directly. Consider: offsets could be relative.
@@ -139,11 +143,12 @@
               (slime-apprentice-update-apprentice-buffer buf)))))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
-      (put-text-property (1+ begin) (1+ end)
-                         (if font-lock-mode
-                             'font-lock-face
-                           'face)
-                         face)
+      (unless (eq :unspecified face)
+        (put-text-property (1+ begin) (1+ end)
+                           (if font-lock-mode
+                               'font-lock-face
+                             'face)
+                           face))
       (put-text-property (1+ begin) (1+ end)
                          'slime-apprentice-button t))))
 
@@ -169,11 +174,12 @@
             (slime-apprentice-update-apprentice-buffer buf))))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
-      (put-text-property (1+ begin) (1+ end)
-                         (if font-lock-mode
-                             'font-lock-face
-                           'face)
-                         face)
+      (unless (eq :unspecified face)
+        (put-text-property (1+ begin) (1+ end)
+                           (if font-lock-mode
+                               'font-lock-face
+                             'face)
+                           face))
       (put-text-property (1+ begin) (1+ end)
                          'slime-apprentice-button t))))
 
@@ -273,6 +279,14 @@
   (slime-apprentice-reinitialize-timer)
   (message "%s" slime-apprentice-polling-frequency))
 
+(defun slime-apprentice-clear-buffer-input (buffer)
+  (with-current-buffer buffer
+    (setf slime-apprentice-presentation-id nil)
+    (setf slime-apprentice-variable-name nil)
+    (setf slime-apprentice-package nil)
+    (setf slime-apprentice-form-string nil)
+    (setf slime-apprentice-looking-at nil)))
+
 (defun slime-apprentice-set-buffer-input (input &optional buffer context)
   (unless buffer
     (setf buffer (current-buffer)))
@@ -280,17 +294,20 @@
     (slime-apprentice-check-apprentice-buffer)
     (setf slime-apprentice-buffer-context context)
     (cond ((integerp input) ; presentation
-           (setf slime-apprentice-presentation-id input)
-           (setf slime-apprentice-variable-name nil))
+           (slime-apprentice-clear-buffer-input buffer)
+           (setf slime-apprentice-presentation-id input))
           ((stringp input) ; symbol
-           (setf slime-apprentice-variable-name input)
-           (setf slime-apprentice-presentation-id nil))
+           (slime-apprentice-clear-buffer-input buffer)
+           (setf slime-apprentice-variable-name input))
           ((and (listp input) ; form
                 (eq 'form (car input)))
-           (setf slime-apprentice-variable-name nil)
-           (setf slime-apprentice-presentation-id nil)
+           (slime-apprentice-clear-buffer-input buffer)
            (setf slime-apprentice-package (cl-getf input 'package))
            (setf slime-apprentice-form-string (cadr input)))
+          ((and (listp input)
+                (eq 'looking-at (car input)))
+           (slime-apprentice-clear-buffer-input buffer)
+           (setf slime-apprentice-looking-at (cl-rest input)))
           (t (error "Bad name or presentation.")))))
 
 (defun slime-apprentice-retrieve-description-for-buffer ()
@@ -324,6 +341,15 @@
                        (slime-apprentice:form-description
                         ,slime-apprentice-form-string
                         ,slime-apprentice-package))))
+            (slime-apprentice-looking-at
+             (slime-eval
+              `(cl:let ((slime-apprentice::*force-return-description*
+                         ,slime-apprentice-force-update)
+                        (slime-apprentice::*buffer-context*
+                         (cl:quote ,slime-apprentice-buffer-context)))
+                       (slime-apprentice:character-description
+                        ,(cl-first slime-apprentice-looking-at)
+                        ,(cl-second slime-apprentice-looking-at)))))
             (t (error "Missing variable or presentation.")))
     (error (slime-apprentice-cancel-timer)
            (setf slime-apprentice-describe-timer nil)
@@ -347,8 +373,10 @@
       (slime-apprentice-set-buffer-input input buffer))
     (when (or slime-apprentice-presentation-id
               slime-apprentice-variable-name
-              slime-apprentice-form-string)
+              slime-apprentice-form-string
+              slime-apprentice-looking-at)
       (let ((results (slime-apprentice-retrieve-description-for-buffer)))
+        ;; (message "%S" results)
         (cond ((eql results :unchanged)
                nil)
               ((eql results :max-size-exceeded)
@@ -430,15 +458,28 @@
         (symbol (thing-at-point 'symbol t))
         (presentation (car (slime-presentation-around-or-before-point
                             (point))))
-        (presentation-id))
+        (presentation-id)
+        (following-char
+         (let ((c (following-char)))
+           (if (zerop c)
+               nil
+             (char-to-string c))))
+        (preceding-char
+         (let ((c (preceding-char)))
+           (if (zerop c)
+               nil
+             (char-to-string c)))))
     (when presentation
       (setf presentation-id (slime-presentation-id presentation)))
     (when (or presentation-id
               (and (or slime-apprentice-active-in-strings
                        (not string))
-                   symbol))
+                   symbol)
+              t)
       (slime-apprentice-set-buffer-input
-       (or presentation-id symbol)
+       (or presentation-id
+           symbol
+           (list 'looking-at preceding-char following-char))
        slime-apprentice-buffer-name
        (slime-apprentice-build-context)))))
 
@@ -453,8 +494,9 @@
   (when (and (or (eql major-mode 'lisp-mode)
                  (eql major-mode 'slime-repl-mode))
              (get-buffer slime-apprentice-buffer-name))
-    (slime-apprentice-set-input-from-point-maybe))
-  (walk-windows #'slime-apprentice-update-if-live-window nil t))
+    (slime-apprentice-set-input-from-point-maybe)
+    (walk-windows #'slime-apprentice-update-if-live-window
+                  nil t)))
 
 (defun slime-apprentice-reinitialize-continuous-timer ()
   (interactive)
@@ -553,4 +595,3 @@
     (let ((slime-apprentice-force-update t))
       (slime-apprentice-update-the-apprentice-buffer))
     (display-buffer slime-apprentice-buffer-name)))
-
