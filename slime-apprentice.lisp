@@ -21,7 +21,8 @@
   (:method ((apprentice function) object stream)
     (funcall apprentice object stream)))
 
-;; May return a string, :unchanged or :max-size-exceeded.
+;; May return a string, a list of two elements (a string and a list
+;; of text properties), :unchanged or :max-size-exceeded.
 (defun return-description (object desc)
   (check-type desc (or string cons))
   (if (<= (length desc) *max-description-size*)
@@ -172,3 +173,26 @@
    (describe-form-with-apprentice *apprentice*
                                   form-string
                                   package-designator)))
+
+(defclass looking-at-character ()
+  ((preceding-char :initarg :preceding-char
+                   :accessor preceding-char
+                   :initform nil)
+   (following-char :initarg :following-char
+                   :accessor following-char
+                   :initform nil)))
+
+(defun Character-description (preceding-char following-char)
+  (let* ((*description-properties* nil))
+    (return-description
+     (list 'looking-at preceding-char following-char)
+     (with-output-to-string (s)
+       (let ((*description-stream* s))
+         (describe-with-apprentice
+          *apprentice*
+          (make-instance 'looking-at-character
+            :following-char following-char
+            :preceding-char preceding-char)
+          s))))))
+
+
