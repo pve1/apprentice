@@ -13,7 +13,7 @@
   "------------------------------------------------------------")
 
 (defmethod describe-with-apprentice ((ap apprentice-gathering)
-                                     (object symbol)
+                                     object
                                      stream)
   (let (divider-printed)
     (flet ((print-divider-maybe ()
@@ -30,6 +30,13 @@
       ;; Print one here as well, to make it look consistent,
       ;; regardless of what the last apprentice printed.
       (print-divider-maybe))))
+
+(defmethod initialize-instance :after ((a apprentice-gathering) &key apprentices)
+  (setf (apprentices a) (mapcar (lambda (x)
+                                  (if (symbolp x)
+                                      (make-instance x)
+                                      x))
+                                apprentices)))
 
 (defun apprentice-gathering (&rest apprentices)
   (make-instance 'apprentice-gathering
