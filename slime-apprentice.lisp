@@ -5,7 +5,8 @@
 
 (in-package :slime-apprentice) cx
 
-(defvar *Apprentice* nil)
+(defvar *Apprentice* (lambda (object stream)
+                       (describe object stream)))
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
 (defvar *Buffer-context* nil)
@@ -16,10 +17,20 @@
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:method (apprentice object stream)
-    (describe object stream)
-    t)
+    nil)
+  (:method (apprentice (object cons) stream)
+    ;; Assume plist with a "type" symbol at the head position.
+    ;; E.g. (person name "John" age 37)
+    (describe-tagged-list apprentice
+                          (first object)
+                          (rest object)
+                          stream))
   (:method ((apprentice function) object stream)
     (funcall apprentice object stream)))
+
+(defgeneric Describe-tagged-list (apprentice tag plist stream)
+  (:method (apprentice tag plist stream)
+    nil))
 
 ;; May return a string, a list of two elements (a string and a list
 ;; of text properties), :unchanged or :max-size-exceeded.
