@@ -2,47 +2,6 @@
 (define-derived-mode slime-apprentice-mode text-mode
   "Slime apprentice")
 
-(defvar slime-apprentice-lisp-font-lock-defaults
-  `((lisp-cl-font-lock-keywords
-     lisp-cl-font-lock-keywords-1
-     lisp-cl-font-lock-keywords-2)
-    nil
-    t
-    nil
-    nil
-	(font-lock-mark-block-function . mark-defun)
-    (font-lock-extra-managed-props help-echo)
-    (font-lock-syntactic-face-function
-     . lisp-font-lock-syntactic-face-function)))
-
-(defun slime-apprentice-fontify-region-using-temp-buffer (b e)
-  (interactive "r")
-  (let* ((text (buffer-substring-no-properties b e))
-         (font-locked (with-temp-buffer
-                        (delay-mode-hooks (lisp-mode))
-                        (font-lock-mode 1)
-                        (insert text)
-                        (font-lock-fontify-buffer)
-                        (buffer-string))))
-    (delete-region b e)
-    (goto-char b)
-    (insert font-locked)))
-
-;; Simpler, but fontification isn't complete. Keywords are not
-;; colored, and only "eclector" in eclector.reader:check-symbol-token.
-
-(defun slime-apprentice-fontify-lisp-region (property)
-  (cl-destructuring-bind (tag begin end) property
-    (let* ((font-lock-defaults
-            slime-apprentice-lisp-font-lock-defaults))
-      (remove-list-of-text-properties
-       begin end '(face font-lock-face))
-      (font-lock-fontify-region begin end))))
-
-(defun slime-apprentice-fontify-lisp-region (property)
-  (cl-destructuring-bind (tag begin end) property
-    (slime-apprentice-fontify-region-using-temp-buffer begin end)))
-
 (define-key slime-apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
 (define-key slime-apprentice-mode-map (kbd "l") 'slime-apprentice-lock-apprentice)
 (define-key slime-apprentice-mode-map (kbd "L") 'slime-apprentice-lock-apprentice-and-split)
@@ -55,11 +14,6 @@
 (define-key slime-apprentice-mode-map [?	] 'slime-apprentice-next-button) ; tab
 (define-key slime-apprentice-mode-map
   (kbd "<backtab>") 'slime-apprentice-previous-button) ; s-tab
-
-(defface slime-apprentice-dim-face `((t :foreground "Gray50" :weight normal))
-  "Dim color")
-(defface slime-apprentice-divider `((t :foreground "Chocolate1"))
-  "Divider color")
 
 (defvar slime-apprentice-polling-frequency 0.5)
 (defvar slime-apprentice-buffer-name "*slime-apprentice*")
@@ -103,29 +57,58 @@
     (setf s2 (propertize s2 'font-lock-face 'default 'font-lock-face 'default))
     (concat s s2)))
 
-(defun slime-apprentice-insert-help-line ()
-  (if slime-apprentice-locked-p
-      (insert slime-apprentice-locked-help-line)
-    (insert slime-apprentice-help-line)))
+(defface slime-apprentice-dim-face `((t :foreground "Gray50" :weight normal))
+  "Dim color")
+(defface slime-apprentice-divider `((t :foreground "Chocolate1"))
+  "Divider color")
 
-;; "Append"?
-(defun slime-apprentice-insert (string &optional properties)
-  (let ((offset (point-max)))
-    (insert string)
-    (when properties
-      (dolist (prop properties)
-        (cl-case (car prop)
-          (slime-apprentice::lisp-button
-           (slime-apprentice-insert-lisp-button prop))
-          (slime-apprentice::elisp-button
-           (slime-apprentice-insert-elisp-button prop))
-          (slime-apprentice::fontify-region
-           (slime-apprentice-fontify-lisp-region prop))
-          (t (error "Bad property %s" prop)))))
-    (goto-char (point-min))
-    ;; Insert the help line last, so that the property offsets work
-    ;; directly. Consider: offsets could be relative.
-    (slime-apprentice-insert-help-line)))
+(defvar slime-apprentice-lisp-font-lock-defaults
+  `((lisp-cl-font-lock-keywords
+     lisp-cl-font-lock-keywords-1
+     lisp-cl-font-lock-keywords-2)
+    nil
+    t
+    nil
+    nil
+	(font-lock-mark-block-function . mark-defun)
+    (font-lock-extra-managed-props help-echo)
+    (font-lock-syntactic-face-function
+     . lisp-font-lock-syntactic-face-function)))
+
+(defun slime-apprentice-fontify-region-using-temp-buffer (b e)
+  (interactive "r")
+  (let* ((text (buffer-substring-no-properties b e))
+         (font-locked (with-temp-buffer
+                        (delay-mode-hooks (lisp-mode))
+                        (font-lock-mode 1)
+                        (insert text)
+                        (font-lock-fontify-buffer)
+                        (buffer-string))))
+    (delete-region b e)
+    (goto-char b)
+    (insert font-locked)))
+
+;; Simpler, but fontification isn't complete. Keywords are not
+;; colored, and only "eclector" in eclector.reader:check-symbol-token.
+
+(defun slime-apprentice-fontify-lisp-region (property)
+  (cl-destructuring-bind (tag begin end) property
+    (let* ((font-lock-defaults
+            slime-apprentice-lisp-font-lock-defaults))
+      (remove-list-of-text-properties
+       begin end '(face font-lock-face))
+      (font-lock-fontify-region begin end))))
+
+(defun slime-apprentice-fontify-lisp-region (property)
+  (cl-destructuring-bind (tag begin end) property
+    (slime-apprentice-fontify-region-using-temp-buffer begin end)))
+
+(defun slime-apprentice-add-face (property)
+  (cl-destructuring-bind (tag begin end face) property
+    (when (stringp face)
+      (setf face (intern face)))
+    (put-text-property (1+ begin) (1+ end) 'face face)
+    (put-text-property (1+ begin) (1+ end) 'font-lock-face face)))
 
 (defun slime-apprentice-insert-elisp-button (prop)
   (cl-destructuring-bind (tag begin end label when-clicked-form
@@ -184,6 +167,32 @@
       (put-text-property (1+ begin) (1+ end)
                          'slime-apprentice-button t))))
 
+(defun slime-apprentice-insert-help-line ()
+  (if slime-apprentice-locked-p
+      (insert slime-apprentice-locked-help-line)
+    (insert slime-apprentice-help-line)))
+
+;; "Append"?
+(defun slime-apprentice-insert (string &optional properties)
+  (let ((offset (point-max)))
+    (insert string)
+    (when properties
+      (dolist (prop properties)
+        (cl-case (car prop)
+          (slime-apprentice::lisp-button
+           (slime-apprentice-insert-lisp-button prop))
+          (slime-apprentice::elisp-button
+           (slime-apprentice-insert-elisp-button prop))
+          (slime-apprentice::fontify-region
+           (slime-apprentice-fontify-lisp-region prop))
+          (slime-apprentice::add-face
+           (slime-apprentice-add-face prop))
+          (t (error "Bad property %s" prop)))))
+    (goto-char (point-min))
+    ;; Insert the help line last, so that the property offsets work
+    ;; directly. Consider: offsets could be relative.
+    (slime-apprentice-insert-help-line)))
+
 (defun slime-apprentice-next-button ()
   (interactive)
   (let ((original-pos (point)))
@@ -231,29 +240,6 @@
       (if (= (point-min) button)
           (goto-char original-pos)
         (goto-char button)))))
-
-;; (defun slime-apprentice-previous-button ()
-;;   (interactive)
-;;   (let ((n 0))
-;;     (when (= (point) (point-min))
-;;       (goto-char (point-max)))
-;;     (when (and (not (= (point) (point-max)))
-;;                (text-property-any (point)
-;;                                   (1+ (point))
-;;                                   'slime-apprentice-button t))
-;;       (goto-char (previous-single-char-property-change
-;;                   (point)
-;;                   'slime-apprentice-button))
-;;       (cl-incf n))
-;;     (condition-case nil
-;;         (progn
-;;           (goto-char (previous-single-char-property-change
-;;                       (point) 'slime-apprentice-button))
-;;           (cl-incf n)
-;;           (when (< n 2)
-;;             (goto-char (previous-single-char-property-change
-;;                         (point) 'slime-apprentice-button))))
-;;       (error (goto-char (point-max))))))
 
 (defun slime-apprentice-check-apprentice-buffer ()
   (unless (eql major-mode 'slime-apprentice-mode)
@@ -328,7 +314,18 @@
             (looking-at
              `(slime-apprentice:character-description
                ,(slime-apprentice-input-property :preceding-char)
-               ,(slime-apprentice-input-property :following-char))))))
+               ,(slime-apprentice-input-property :following-char)))
+            (form
+             ;; Ensure the package is fixed in this buffer. This
+             ;; should not be needed.
+             (unless (slime-apprentice-input-property :package)
+               (slime-apprentice-set-input-property
+                :package
+                (slime-eval `(cl:package-name cl:*package*))))
+             `(cl:progn
+                (slime-apprentice:form-description
+                 ,(slime-apprentice-input-property :string)
+                 ,(slime-apprentice-input-property :package)))))))
     (unless eval-form
       (error "Missing variable or presentation."))
     (condition-case nil
@@ -546,6 +543,9 @@
 (defun slime-apprentice-input-property (property-name)
   (cl-getf (cdr slime-apprentice-input) property-name))
 
+(defun slime-apprentice-set-input-property (property-name value)
+  (setf (cl-getf (cdr slime-apprentice-input) property-name value)))
+
 (defun slime-apprentice-lock-apprentice ()
   (interactive)
   (slime-apprentice-check-apprentice-buffer)
@@ -558,7 +558,7 @@
                    (looking-at (slime-apprentice-input-property
                                 :following-char))
                    (form (let ((string (slime-apprentice-input-property
-                                        :form-string)))
+                                        :string)))
                            (when string
                              (substring string 0 (min 20 (length string))))))))))
     (cond ((get-buffer buffer-name)
