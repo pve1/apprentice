@@ -12,6 +12,17 @@
 (defmethod Apprentice-gathering-divider ((ap apprentice-gathering))
   "------------------------------------------------------------")
 
+(defmacro with-face ((face &optional (stream '*standard-output*))
+                     &body body)
+  (alexandria:with-gensyms (begin)
+    `(let ((,begin (file-position ,stream)))
+       (prog1 (progn ,@body)
+         (push (list 'add-face
+                     ,begin
+                     (file-position stream)
+                     ,face)
+               *description-properties*)))))
+
 (defmethod describe-with-apprentice ((ap apprentice-gathering)
                                      object
                                      stream)
@@ -19,7 +30,8 @@
     (flet ((print-divider-maybe ()
              (unless divider-printed
                (fresh-line stream)
-               (princ (apprentice-gathering-divider ap) stream)
+               (with-face ("slime-apprentice-divider" stream)
+                 (princ (apprentice-gathering-divider ap) stream))
                (fresh-line stream)
                (setf divider-printed t))))
       (dolist (a (apprentices ap))
@@ -52,5 +64,3 @@
                           'value-apprentice
                           'grep-apprentice
                           'apropos-apprentice)))
-
-
