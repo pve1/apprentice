@@ -544,7 +544,7 @@
   (cl-getf (cdr slime-apprentice-input) property-name))
 
 (defun slime-apprentice-set-input-property (property-name value)
-  (setf (cl-getf (cdr slime-apprentice-input) property-name value)))
+  (setf (cl-getf (cdr slime-apprentice-input) property-name) value))
 
 (defun slime-apprentice-lock-apprentice ()
   (interactive)
