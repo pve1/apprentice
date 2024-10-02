@@ -194,15 +194,3 @@
       (push `(fontify-region ,offset ,(+ offset (length string)))
             *description-properties*)
       string)))
-
-;; Note: can't filter lines here, as buttons have already been added.
-(defmethod toplevel-apprentice-sort-lines (apprentice string)
-  (with-input-from-string (s string)
-    (let ((lines (loop :for line = (read-line s nil s)
-                       :until (eq line s)
-                       :collect line)))
-      (setf lines (sort lines #'string<))
-      (with-output-to-string (s2)
-        (dolist (l lines)
-          (princ l s2)
-          (terpri s2))))))
