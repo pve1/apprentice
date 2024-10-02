@@ -60,16 +60,17 @@
                        :accessor ignore-line-regexp
                        :initform "^ *$|^;|^\\(in-package")))
 
-(defmethod initialize-instance :after ((w wide-toplevel-apprentice) 
+(defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
   (setf *toplevel-apprentice* w)
   (when (stringp ignore-line-regexp)
-    (setf (ignore-line-regexp w) 
+    (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
 
 ;; Singleton
 (defvar *toplevel-apprentice* nil)
 
+;; Hack
 (defmethod apprentice-update ((ap wide-toplevel-apprentice)
                               object)
   (let ((offset (file-position *standard-output*))
@@ -116,7 +117,7 @@
                                     :line line
                                     :line-number line-number))))
            (select-files ()
-             (case (file-selection-mode ap) 
+             (case (file-selection-mode ap)
                (:directory
                 (directory
                  (if (getf *buffer-context* :filename)
@@ -124,32 +125,32 @@
                       "*.lisp"
                       (getf *buffer-context* :filename))
                      (merge-pathnames "*.lisp"))))
-               (:file 
+               (:file
                 (list (getf *buffer-context* :filename))))))
       (setf string
             (with-output-to-string (result)
               (format result "Toplevel forms: ")
-              (put-lisp-button-here 
-               ap 
-               "FILE" 
+              (put-lisp-button-here
+               ap
+               "FILE"
                '(setf (file-selection-mode *toplevel-apprentice*)
                  :file)
                :stream result
                :offset offset
                :redisplay t)
               (princ " " result)
-              (put-lisp-button-here 
-               ap 
-               "DIR" 
+              (put-lisp-button-here
+               ap
+               "DIR"
                '(setf (file-selection-mode *toplevel-apprentice*)
                  :directory)
                :stream result
                :offset offset
                :redisplay t)
               (princ " " result)
-              (put-lisp-button-here 
-               ap 
-               "SORT" 
+              (put-lisp-button-here
+               ap
+               "SORT"
                '(setf (sort-lines-p *toplevel-apprentice*)
                  (not (sort-lines-p *toplevel-apprentice*)))
                :stream result
@@ -157,18 +158,22 @@
                :redisplay t)
               (terpri result)
               (if (sort-lines-p ap)
-                  (let ((lines (loop :for file 
+                  (let ((lines (loop :for file
                                      :in (select-files)
                                      :append (collect-lines file))))
-                    (setf lines (sort lines 
+                    (setf lines (sort lines
                                       #'string<
                                       :key (lambda (x) (getf x :line))))
                     (terpri result)
+                    (when (eq :file (file-selection-mode ap))
+                      (format result ";;; ~A~%"
+                              (file-namestring
+                               (getf (first lines) :file))))
                     (dolist (line lines)
                       (destructuring-bind (&key line line-number file)
                           line
-                        (put-elisp-button-here 
-                         ap 
+                        (put-elisp-button-here
+                         ap
                          line
                          `(let ((current-window
                                   (get-buffer-window)))
