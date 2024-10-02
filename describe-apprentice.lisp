@@ -55,7 +55,8 @@
                 `(export ',object (find-package ,(package-name *package*)))
                 :stream stream))))
       ;; Makunbound
-      (when (boundp object)
+      (when (and (boundp object)
+                 (not (keywordp object)))
         (space)
         (put-lisp-button-here ap
                               "MAKUNBOUND"
