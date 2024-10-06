@@ -1,29 +1,29 @@
 ;; -*- lexical-binding: t -*-
-(define-derived-mode slime-apprentice-mode text-mode
+(define-derived-mode apprentice-mode text-mode
   "Slime apprentice")
 
-(define-key slime-apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
-(define-key slime-apprentice-mode-map (kbd "l") 'slime-apprentice-lock-apprentice)
-(define-key slime-apprentice-mode-map (kbd "L") 'slime-apprentice-lock-apprentice-and-split)
-(define-key slime-apprentice-mode-map (kbd "g") 'slime-apprentice-update-apprentice-buffer)
-(define-key slime-apprentice-mode-map (kbd "f") 'slime-apprentice-faster-polling)
-(define-key slime-apprentice-mode-map (kbd "F") 'slime-apprentice-slower-polling)
-(define-key slime-apprentice-mode-map (kbd "+") 'slime-apprentice-faster-polling)
-(define-key slime-apprentice-mode-map (kbd "-") 'slime-apprentice-slower-polling)
-(define-key slime-apprentice-mode-map (kbd "m") 'slime-apprentice-toggle-update-mode)
-(define-key slime-apprentice-mode-map (kbd "e") 'slime-apprentice-toggle-eager)
-(define-key slime-apprentice-mode-map [?	] 'slime-apprentice-next-button) ; tab
-(define-key slime-apprentice-mode-map
-  (kbd "<backtab>") 'slime-apprentice-previous-button) ; s-tab
+(define-key apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
+(define-key apprentice-mode-map (kbd "l") 'apprentice-lock-apprentice)
+(define-key apprentice-mode-map (kbd "L") 'apprentice-lock-apprentice-and-split)
+(define-key apprentice-mode-map (kbd "g") 'apprentice-update-apprentice-buffer)
+(define-key apprentice-mode-map (kbd "f") 'apprentice-faster-polling)
+(define-key apprentice-mode-map (kbd "F") 'apprentice-slower-polling)
+(define-key apprentice-mode-map (kbd "+") 'apprentice-faster-polling)
+(define-key apprentice-mode-map (kbd "-") 'apprentice-slower-polling)
+(define-key apprentice-mode-map (kbd "m") 'apprentice-toggle-update-mode)
+(define-key apprentice-mode-map (kbd "e") 'apprentice-toggle-eager)
+(define-key apprentice-mode-map [?	] 'apprentice-next-button) ; tab
+(define-key apprentice-mode-map
+  (kbd "<backtab>") 'apprentice-previous-button) ; s-tab
 
-(defvar slime-apprentice-polling-frequency 0.5)
-(defvar slime-apprentice-buffer-name "*slime-apprentice*")
-(defvar slime-apprentice-update-mode 'idle) ; or 'continuous
-(defvar slime-apprentice-force-update nil)
-(defvar slime-apprentice-describe-timer nil)
-(defvar slime-apprentice-active-in-strings nil)
-(defvar slime-apprentice-eager-p t)
-(defvar slime-apprentice-update-apprentice-buffer-hook
+(defvar apprentice-polling-frequency 0.5)
+(defvar apprentice-buffer-name "*apprentice*")
+(defvar apprentice-update-mode 'idle) ; or 'continuous
+(defvar apprentice-force-update nil)
+(defvar apprentice-describe-timer nil)
+(defvar apprentice-active-in-strings nil)
+(defvar apprentice-eager-p t)
+(defvar apprentice-update-apprentice-buffer-hook
   nil)
 
 ;; Valid members are:
@@ -34,38 +34,38 @@
 ;; - point
 ;; - current-line
 ;; - max-line
-(defvar slime-apprentice-provide-context '())
+(defvar apprentice-provide-context '())
 
-(defvar-local slime-apprentice-input nil)
-(defvar-local slime-apprentice-buffer-context nil)
-(defvar-local slime-apprentice-variable-name nil)
-(defvar-local slime-apprentice-presentation-id nil)
-(defvar-local slime-apprentice-form-string nil)
-(defvar-local slime-apprentice-package nil)
-(defvar-local slime-apprentice-looking-at nil)
-(defvar-local slime-apprentice-locked-p nil)
-(defvar-local slime-apprentice-ephemeral-functions nil)
+(defvar-local apprentice-input nil)
+(defvar-local apprentice-buffer-context nil)
+(defvar-local apprentice-variable-name nil)
+(defvar-local apprentice-presentation-id nil)
+(defvar-local apprentice-form-string nil)
+(defvar-local apprentice-package nil)
+(defvar-local apprentice-looking-at nil)
+(defvar-local apprentice-locked-p nil)
+(defvar-local apprentice-ephemeral-functions nil)
 
-(defvar slime-apprentice-help-line
+(defvar apprentice-help-line
   (let ((s " [q]:quit [l|L]:lock [-|+]:freq [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'face 'default 'font-lock-face 'default))
     (concat s s2)))
 
-(defvar slime-apprentice-locked-help-line
+(defvar apprentice-locked-help-line
   (let ((s " [q]:quit [-]|[+]:freq [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'font-lock-face 'default 'font-lock-face 'default))
     (concat s s2)))
 
-(defface slime-apprentice-dim-face `((t :foreground "Gray50" :weight normal))
+(defface apprentice-dim-face `((t :foreground "Gray50" :weight normal))
   "Dim color")
-(defface slime-apprentice-divider `((t :foreground "Chocolate1"))
+(defface apprentice-divider `((t :foreground "Chocolate1"))
   "Divider color")
 
-(defvar slime-apprentice-lisp-font-lock-defaults
+(defvar apprentice-lisp-font-lock-defaults
   `((lisp-cl-font-lock-keywords
      lisp-cl-font-lock-keywords-1
      lisp-cl-font-lock-keywords-2)
@@ -80,15 +80,15 @@
 
 ;;; Toggles
 
-(defun slime-apprentice-toggle-eager ()
+(defun apprentice-toggle-eager ()
   (interactive)
   (message "Eager: %s"
-           (setf slime-apprentice-eager-p
-                 (not slime-apprentice-eager-p))))
+           (setf apprentice-eager-p
+                 (not apprentice-eager-p))))
 
 ;;; Fontification
 
-(defun slime-apprentice-fontify-region-using-temp-buffer (b e)
+(defun apprentice-fontify-region-using-temp-buffer (b e)
   (interactive "r")
   (let* ((text (buffer-substring-no-properties b e))
          (font-locked (with-temp-buffer
@@ -104,49 +104,49 @@
 ;; Simpler, but fontification isn't complete. Keywords are not
 ;; colored, and only "eclector" in eclector.reader:check-symbol-token.
 
-(defun slime-apprentice-fontify-lisp-region (property)
+(defun apprentice-fontify-lisp-region (property)
   (cl-destructuring-bind (tag begin end) property
     (let* ((font-lock-defaults
-            slime-apprentice-lisp-font-lock-defaults))
+            apprentice-lisp-font-lock-defaults))
       (remove-list-of-text-properties
        begin end '(face font-lock-face))
       (font-lock-fontify-region begin end))))
 
-(defun slime-apprentice-fontify-lisp-region (property)
+(defun apprentice-fontify-lisp-region (property)
   (cl-destructuring-bind (tag begin end) property
-    (slime-apprentice-fontify-region-using-temp-buffer begin end)))
+    (apprentice-fontify-region-using-temp-buffer begin end)))
 
-(defun slime-apprentice-add-face (property)
+(defun apprentice-add-face (property)
   (cl-destructuring-bind (tag begin end face) property
     (when (stringp face)
       (setf face (intern face)))
     (put-text-property (1+ begin) (1+ end) 'face face)
     (put-text-property (1+ begin) (1+ end) 'font-lock-face face)))
 
-(defun slime-apprentice-elisp-ephemeral-callback (function-name
-                                                  arguments
-                                                  buf
-                                                  redisplay
-                                                  button-order)
-  (apply #'slime-apprentice-call-ephemeral function-name arguments)
+(defun apprentice-elisp-ephemeral-callback (function-name
+                                            arguments
+                                            buf
+                                            redisplay
+                                            button-order)
+  (apply #'apprentice-call-ephemeral function-name arguments)
   (when redisplay
-    (slime-apprentice-update-apprentice-buffer buf)
+    (apprentice-update-apprentice-buffer buf)
     (when button-order
-      (slime-apprentice-jump-to-nth-button button-order))))
+      (apprentice-jump-to-nth-button button-order))))
 
-(defun slime-apprentice-elisp-callback (when-clicked-form
-                                        buf
-                                        redisplay
-                                        button-order)
+(defun apprentice-elisp-callback (when-clicked-form
+                                  buf
+                                  redisplay
+                                  button-order)
   (let ((form (car (read-from-string when-clicked-form))))
     (message "%S" form)
     (eval form)
     (when redisplay
-      (slime-apprentice-update-apprentice-buffer buf)
+      (apprentice-update-apprentice-buffer buf)
       (when button-order
-        (slime-apprentice-jump-to-nth-button button-order)))))
+        (apprentice-jump-to-nth-button button-order)))))
 
-(defun slime-apprentice-insert-elisp-button (prop &optional button-order)
+(defun apprentice-insert-elisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
                               &key face redisplay name
                               arguments &allow-other-keys)
@@ -158,7 +158,7 @@
           (define-key keymap (kbd "RET")
             (lambda ()
               (interactive)
-              (slime-apprentice-elisp-ephemeral-callback
+              (apprentice-elisp-ephemeral-callback
                name
                arguments
                buf
@@ -167,7 +167,7 @@
         (define-key keymap (kbd "RET")
           (lambda ()
             (interactive)
-            (slime-apprentice-elisp-callback
+            (apprentice-elisp-callback
              when-clicked-form
              buf
              redisplay
@@ -181,9 +181,9 @@
                              'face)
                            face))
       (put-text-property (1+ begin) (1+ end)
-                         'slime-apprentice-button t))))
+                         'apprentice-button t))))
 
-(defun slime-apprentice-insert-lisp-button (prop &optional button-order)
+(defun apprentice-insert-lisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
                               &key face redisplay name
                               arguments &allow-other-keys)
@@ -203,9 +203,9 @@
                                         ; objects
             (slime-eval when-clicked-form))
           (when redisplay
-            (slime-apprentice-update-apprentice-buffer buf)
+            (apprentice-update-apprentice-buffer buf)
             (when button-order
-              (slime-apprentice-jump-to-nth-button button-order)))))
+              (apprentice-jump-to-nth-button button-order)))))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
       (unless (eq :unspecified face)
@@ -215,29 +215,29 @@
                              'face)
                            face))
       (put-text-property (1+ begin) (1+ end)
-                         'slime-apprentice-button t))))
+                         'apprentice-button t))))
 
-(defun slime-apprentice-insert-help-line ()
-  (if slime-apprentice-locked-p
-      (insert slime-apprentice-locked-help-line)
-    (insert slime-apprentice-help-line)))
+(defun apprentice-insert-help-line ()
+  (if apprentice-locked-p
+      (insert apprentice-locked-help-line)
+    (insert apprentice-help-line)))
 
-(defun slime-apprentice-create-ephemeral-function (prop)
+(defun apprentice-create-ephemeral-function (prop)
   (cl-destructuring-bind (tag &key name lambda-string) prop
     (push (cons name (let ((byte-compile-warnings nil))
                        (byte-compile (car (read-from-string lambda-string)))))
-          slime-apprentice-ephemeral-functions)))
+          apprentice-ephemeral-functions)))
 
-(defun slime-apprentice-call-ephemeral (name &rest args)
-  (let ((func (cdr (assoc name slime-apprentice-ephemeral-functions))))
+(defun apprentice-call-ephemeral (name &rest args)
+  (let ((func (cdr (assoc name apprentice-ephemeral-functions))))
     (if func
         (apply func args)
       (error "No ephemeral function found: %S" name))))
 
 ;; "Append"?
-(defun slime-apprentice-insert (string &optional properties)
+(defun apprentice-insert (string &optional properties)
   (let ((offset (point-max)))
-    (setf slime-apprentice-ephemeral-functions nil)
+    (setf apprentice-ephemeral-functions nil)
     (insert string)
     (when properties
       ;; Hack: Assumes properties are reversed, i.e. last button
@@ -247,135 +247,135 @@
       (let ((button-count
              (1+ (cl-count-if
                   (lambda (x)
-                    (member (car x) '(slime-apprentice::lisp-button
-                                      slime-apprentice::elisp-button)))
+                    (member (car x) '(apprentice::lisp-button
+                                      apprentice::elisp-button)))
                   properties))))
         (dolist (prop properties)
           (cl-case (car prop)
-            (slime-apprentice::lisp-button
-             (slime-apprentice-insert-lisp-button
+            (apprentice::lisp-button
+             (apprentice-insert-lisp-button
               prop (cl-decf button-count)))
-            (slime-apprentice::elisp-button
-             (slime-apprentice-insert-elisp-button
+            (apprentice::elisp-button
+             (apprentice-insert-elisp-button
               prop (cl-decf button-count)))
-            (slime-apprentice::fontify-region
-             (slime-apprentice-fontify-lisp-region prop))
-            (slime-apprentice::add-face
-             (slime-apprentice-add-face prop))
-            (slime-apprentice::ephemeral-function
-             (slime-apprentice-create-ephemeral-function prop))
+            (apprentice::fontify-region
+             (apprentice-fontify-lisp-region prop))
+            (apprentice::add-face
+             (apprentice-add-face prop))
+            (apprentice::ephemeral-function
+             (apprentice-create-ephemeral-function prop))
             (t (warn "Bad property %s" prop))))))
     (goto-char (point-min))
     ;; Insert the help line last, so that the property offsets work
     ;; directly. Consider: offsets could be relative.
-    (slime-apprentice-insert-help-line)))
+    (apprentice-insert-help-line)))
 
-(defun slime-apprentice-beginning-of-button-p ()
+(defun apprentice-beginning-of-button-p ()
   (cond ((= (point) (point-max))
          nil)
         ((= (point) (point-min))
          (text-property-any (point)
                             (1+ (point))
-                            'slime-apprentice-button t))
+                            'apprentice-button t))
         ((and (text-property-any (1- (point))
                                  (point)
-                                 'slime-apprentice-button nil)
+                                 'apprentice-button nil)
               (text-property-any (point)
                                  (1+ (point))
-                                 'slime-apprentice-button t))
+                                 'apprentice-button t))
          t)))
 
-(defun slime-apprentice-end-of-button-p ()
+(defun apprentice-end-of-button-p ()
   (cond ((= (point) (point-min))
          nil)
         ((= (point) (point-max))
          (text-property-any (1- (point))
                             (point)
-                            'slime-apprentice-button t))
+                            'apprentice-button t))
         ((and (text-property-any (1- (point))
                                  (point)
-                                 'slime-apprentice-button t)
+                                 'apprentice-button t)
               (text-property-any (point)
                                  (1+ (point))
-                                 'slime-apprentice-button nil))
+                                 'apprentice-button nil))
          t)))
 
-(defun slime-apprentice-next-button ()
+(defun apprentice-next-button ()
   (interactive)
   (let ((original-pos (point)))
     (goto-char (next-single-char-property-change
                 (point)
-                'slime-apprentice-button))
-    (when (slime-apprentice-end-of-button-p)
+                'apprentice-button))
+    (when (apprentice-end-of-button-p)
       (goto-char (next-single-char-property-change
                   (point)
-                  'slime-apprentice-button)))
+                  'apprentice-button)))
     (when (and (= (point) (point-max))
                (not (= (point) (point-min))))
       (goto-char (point-min))
-      (slime-apprentice-next-button))))
+      (apprentice-next-button))))
 
-(defun slime-apprentice-previous-button ()
+(defun apprentice-previous-button ()
   (interactive)
   (let ((original-pos (point)))
     (goto-char (previous-single-char-property-change
                 (point)
-                'slime-apprentice-button))
-    (when (slime-apprentice-beginning-of-button-p)
+                'apprentice-button))
+    (when (apprentice-beginning-of-button-p)
       (goto-char (previous-single-char-property-change
                   (point)
-                  'slime-apprentice-button)))
-    (when (slime-apprentice-end-of-button-p)
+                  'apprentice-button)))
+    (when (apprentice-end-of-button-p)
       (goto-char (previous-single-char-property-change
                   (point)
-                  'slime-apprentice-button)))
+                  'apprentice-button)))
     (when (and (= (point) (point-min))
                (not (= (point) (point-max))))
       (goto-char (point-max))
-      (slime-apprentice-previous-button))))
+      (apprentice-previous-button))))
 
-(defun slime-apprentice-jump-to-nth-button (count)
+(defun apprentice-jump-to-nth-button (count)
   (goto-char (point-min))
   ;; Reach the first button
   (when (< 0 count)
     (goto-char (next-single-char-property-change
-                (point) 'slime-apprentice-button))
+                (point) 'apprentice-button))
     (dotimes (n (1- count))
       ;; Jump over the current button
       (goto-char
        (next-single-char-property-change
         (point)
-        'slime-apprentice-button))
+        'apprentice-button))
       ;; Reach the next button
       (goto-char
        (next-single-char-property-change
         (point)
-        'slime-apprentice-button)))))
+        'apprentice-button)))))
 
-(defun slime-apprentice-check-apprentice-buffer ()
-  (unless (eql major-mode 'slime-apprentice-mode)
+(defun apprentice-check-apprentice-buffer ()
+  (unless (eql major-mode 'apprentice-mode)
     (error "Not an apprentice buffer.")))
 
-(defun slime-apprentice-buffer-p (buf)
+(defun apprentice-buffer-p (buf)
   (let ((mode (buffer-local-value 'major-mode buf)))
-    (eql mode 'slime-apprentice-mode)))
+    (eql mode 'apprentice-mode)))
 
-(defun slime-apprentice-window-p (win)
-  (slime-apprentice-buffer-p (window-buffer win)))
+(defun apprentice-window-p (win)
+  (apprentice-buffer-p (window-buffer win)))
 
-(defun slime-apprentice-faster-polling ()
+(defun apprentice-faster-polling ()
   (interactive)
-  (setf slime-apprentice-polling-frequency
-        (/ slime-apprentice-polling-frequency 2.0))
-  (slime-apprentice-reinitialize-timer)
-  (message "%s" slime-apprentice-polling-frequency))
+  (setf apprentice-polling-frequency
+        (/ apprentice-polling-frequency 2.0))
+  (apprentice-reinitialize-timer)
+  (message "%s" apprentice-polling-frequency))
 
-(defun slime-apprentice-slower-polling ()
+(defun apprentice-slower-polling ()
   (interactive)
-  (setf slime-apprentice-polling-frequency
-        (* slime-apprentice-polling-frequency 2.0))
-  (slime-apprentice-reinitialize-timer)
-  (message "%s" slime-apprentice-polling-frequency))
+  (setf apprentice-polling-frequency
+        (* apprentice-polling-frequency 2.0))
+  (apprentice-reinitialize-timer)
+  (message "%s" apprentice-polling-frequency))
 
 ;;; Input should be:
 
@@ -390,106 +390,106 @@
 ;; current-line
 ;; max-line
 
-(defun slime-apprentice-clear-buffer-input (buffer)
+(defun apprentice-clear-buffer-input (buffer)
   (with-current-buffer buffer
-    (setf slime-apprentice-presentation-id nil)
-    (setf slime-apprentice-variable-name nil)
-    (setf slime-apprentice-package nil)
-    (setf slime-apprentice-form-string nil)
-    (setf slime-apprentice-looking-at nil)))
+    (setf apprentice-presentation-id nil)
+    (setf apprentice-variable-name nil)
+    (setf apprentice-package nil)
+    (setf apprentice-form-string nil)
+    (setf apprentice-looking-at nil)))
 
-(defun slime-apprentice-check-input (input)
+(defun apprentice-check-input (input)
   (unless (and (listp input)
                (symbolp (car input)))
     (error "Invalid input")))
 
-(defun slime-apprentice-set-buffer-input (input &optional buffer context)
+(defun apprentice-set-buffer-input (input &optional buffer context)
   (unless buffer
     (setf buffer (current-buffer)))
   (with-current-buffer buffer
-    (slime-apprentice-check-apprentice-buffer)
-    (setf slime-apprentice-buffer-context context)
-    (slime-apprentice-check-input input)
-    (setf slime-apprentice-input input)))
+    (apprentice-check-apprentice-buffer)
+    (setf apprentice-buffer-context context)
+    (apprentice-check-input input)
+    (setf apprentice-input input)))
 
-(defun slime-apprentice-retrieve-description-for-buffer ()
-  (let* ((context (cdr slime-apprentice-input))
+(defun apprentice-retrieve-description-for-buffer ()
+  (let* ((context (cdr apprentice-input))
          (eval-form
-          (cl-case (car slime-apprentice-input)
+          (cl-case (car apprentice-input)
             (presentation
-             `(slime-apprentice:presentation-description
-               ,(slime-apprentice-input-property :id)))
+             `(apprentice:presentation-description
+               ,(apprentice-input-property :id)))
             (symbol
-             `(slime-apprentice:symbol-description
-               ,(slime-apprentice-input-property :name)))
+             `(apprentice:symbol-description
+               ,(apprentice-input-property :name)))
             (looking-at
-             `(slime-apprentice:character-description
-               ,(slime-apprentice-input-property :preceding-char)
-               ,(slime-apprentice-input-property :following-char)))
+             `(apprentice:character-description
+               ,(apprentice-input-property :preceding-char)
+               ,(apprentice-input-property :following-char)))
             (form
              ;; Ensure the package is fixed in this buffer. This
              ;; should not be needed.
-             (unless (slime-apprentice-input-property :package)
-               (slime-apprentice-set-input-property
+             (unless (apprentice-input-property :package)
+               (apprentice-set-input-property
                 :package
                 (slime-eval `(cl:package-name cl:*package*))))
              `(cl:progn
-                (slime-apprentice:form-description
-                 ,(slime-apprentice-input-property :string)
-                 ,(slime-apprentice-input-property :package)))))))
+               (apprentice:form-description
+                ,(apprentice-input-property :string)
+                ,(apprentice-input-property :package)))))))
     (unless eval-form
       (error "Missing variable or presentation."))
     (condition-case nil
         (slime-eval
-         `(cl:let ((slime-apprentice::*force-return-description*
-                    ,slime-apprentice-force-update)
-                   (slime-apprentice::*buffer-context*
+         `(cl:let ((apprentice::*force-return-description*
+                    ,apprentice-force-update)
+                   (apprentice::*buffer-context*
                     (cl:quote ,context)))
                   ,eval-form))
-      (error (slime-apprentice-cancel-timer)
-             (setf slime-apprentice-describe-timer nil)
+      (error (apprentice-cancel-timer)
+             (setf apprentice-describe-timer nil)
              (message "Error retrieving description. Are we consing yet?")
              nil))))
 
-(defun slime-apprentice-create-apprentice-buffer ()
-  (let ((buffer (get-buffer-create slime-apprentice-buffer-name)))
+(defun apprentice-create-apprentice-buffer ()
+  (let ((buffer (get-buffer-create apprentice-buffer-name)))
     (with-current-buffer buffer
-      (unless (eq major-mode 'slime-apprentice-mode)
-        (slime-apprentice-mode))
+      (unless (eq major-mode 'apprentice-mode)
+        (apprentice-mode))
       buffer)))
 
-(defun slime-apprentice-update-apprentice-buffer (&optional buffer input)
+(defun apprentice-update-apprentice-buffer (&optional buffer input)
   (interactive)
   (unless buffer
     (setf buffer (current-buffer)))
   (with-current-buffer buffer
-    (slime-apprentice-check-apprentice-buffer)
+    (apprentice-check-apprentice-buffer)
     (when input
-      (slime-apprentice-set-buffer-input input buffer))
-    (when slime-apprentice-input
-      (let ((results (slime-apprentice-retrieve-description-for-buffer)))
+      (apprentice-set-buffer-input input buffer))
+    (when apprentice-input
+      (let ((results (apprentice-retrieve-description-for-buffer)))
         ;; (message "%S" results)
         (cond ((eql results :unchanged)
                nil)
               ((eql results :max-size-exceeded)
                (erase-buffer)
-               (slime-apprentice-insert "[Max size exceeded]"))
+               (apprentice-insert "[Max size exceeded]"))
               ((stringp results)
                (erase-buffer)
-               (slime-apprentice-insert results))
+               (apprentice-insert results))
               ((listp results)          ; with properties
                (erase-buffer)
-               (slime-apprentice-insert (car results) (cadr results))))))
+               (apprentice-insert (car results) (cadr results))))))
     (goto-char (point-min))
-    (run-hooks 'slime-apprentice-update-apprentice-buffer-hook)))
+    (run-hooks 'apprentice-update-apprentice-buffer-hook)))
 
-(defun slime-apprentice-update-the-apprentice-buffer (&optional input)
+(defun apprentice-update-the-apprentice-buffer (&optional input)
   (interactive)
-  (let ((buffer (or (get-buffer slime-apprentice-buffer-name)
-                    (slime-apprentice-create-apprentice-buffer))))
-    (slime-apprentice-update-apprentice-buffer buffer input)))
+  (let ((buffer (or (get-buffer apprentice-buffer-name)
+                    (apprentice-create-apprentice-buffer))))
+    (apprentice-update-apprentice-buffer buffer input)))
 
-(defun slime-apprentice-enclosing-form-position ()
+(defun apprentice-enclosing-form-position ()
   (condition-case nil
       (save-excursion
         (up-list -1 t)
@@ -498,10 +498,10 @@
         (point))
     (error nil)))
 
-(defun slime-apprentice-enclosing-form ()
+(defun apprentice-enclosing-form ()
   (condition-case nil
       (let ((enclosing-form-position
-             (slime-apprentice-enclosing-form-position)))
+             (apprentice-enclosing-form-position)))
         (save-excursion
           (up-list -1 t)
           (when (eql ?\" (char-after (point)))
@@ -512,7 +512,7 @@
            (point))))
     (error nil)))
 
-(defun slime-apprentice-toplevel-form ()
+(defun apprentice-toplevel-form ()
   (condition-case nil
       (save-excursion
         (let (begin)
@@ -523,29 +523,29 @@
            begin (point))))
     (error nil)))
 
-(defun slime-apprentice-package ()
+(defun apprentice-package ()
   (condition-case nil
       (slime-current-package)
     (error nil)))
 
-(defun slime-apprentice-build-context ()
-  (when slime-apprentice-provide-context
-    `(,@(when (member 'point slime-apprentice-provide-context)
+(defun apprentice-build-context ()
+  (when apprentice-provide-context
+    `(,@(when (member 'point apprentice-provide-context)
           (list :point (point)))
-      ,@(when (member 'current-line slime-apprentice-provide-context)
+      ,@(when (member 'current-line apprentice-provide-context)
           (list :current-line (line-number-at-pos)))
-      ,@(when (member 'max-line slime-apprentice-provide-context)
+      ,@(when (member 'max-line apprentice-provide-context)
           (list :max-line (line-number-at-pos (point-max))))
-      ,@(when (member 'enclosing-form slime-apprentice-provide-context)
-          (list :enclosing-form (slime-apprentice-enclosing-form)))
-      ,@(when (member 'toplevel-form slime-apprentice-provide-context)
-          (list :toplevel-form (slime-apprentice-toplevel-form)))
-      ,@(when (member 'package slime-apprentice-provide-context)
-          (list :package (slime-apprentice-package)))
-      ,@(when (member 'filename slime-apprentice-provide-context)
+      ,@(when (member 'enclosing-form apprentice-provide-context)
+          (list :enclosing-form (apprentice-enclosing-form)))
+      ,@(when (member 'toplevel-form apprentice-provide-context)
+          (list :toplevel-form (apprentice-toplevel-form)))
+      ,@(when (member 'package apprentice-provide-context)
+          (list :package (apprentice-package)))
+      ,@(when (member 'filename apprentice-provide-context)
           (list :filename (buffer-file-name))))))
 
-(defun slime-apprentice-determine-input-at-point ()
+(defun apprentice-determine-input-at-point ()
   (cl-block determine-input
     ;; Presentation?
     (let* ((presentation
@@ -556,12 +556,12 @@
       (when presentation-id
         (cl-return-from determine-input
           `(presentation :id presentation-id
-                         ,@(slime-apprentice-build-context)))))
+                         ,@(apprentice-build-context)))))
     ;; Symbol?
     (let* ((symbol (thing-at-point 'symbol t)))
       (when symbol
         (cl-return-from determine-input
-          `(symbol :name ,symbol ,@(slime-apprentice-build-context)))))
+          `(symbol :name ,symbol ,@(apprentice-build-context)))))
     ;; Character
     (let* ((following-char
             (let ((c (following-char)))
@@ -576,129 +576,129 @@
       (cl-return-from determine-input
         `(looking-at :following-char ,following-char
                      :preceding-char ,preceding-char
-                     ,@(slime-apprentice-build-context))))))
+                     ,@(apprentice-build-context))))))
 
-(defun slime-apprentice-set-input-from-point-maybe ()
-  (let ((input (slime-apprentice-determine-input-at-point)))
-    (slime-apprentice-set-buffer-input
+(defun apprentice-set-input-from-point-maybe ()
+  (let ((input (apprentice-determine-input-at-point)))
+    (apprentice-set-buffer-input
      input
-     slime-apprentice-buffer-name)))
+     apprentice-buffer-name)))
 
-(defun slime-apprentice-update-if-live-window (window)
+(defun apprentice-update-if-live-window (window)
   (let ((buf (window-buffer window)))
-    (when (and (slime-apprentice-buffer-p buf)
+    (when (and (apprentice-buffer-p buf)
                (not (eql (current-buffer) buf)))
-      (slime-apprentice-update-apprentice-buffer buf))))
+      (apprentice-update-apprentice-buffer buf))))
 
-(defun slime-apprentice-timer-function ()
+(defun apprentice-timer-function ()
   (interactive)
-  (cond ((and slime-apprentice-eager-p
+  (cond ((and apprentice-eager-p
               (eql major-mode 'lisp-mode)
-              (get-buffer slime-apprentice-buffer-name)
+              (get-buffer apprentice-buffer-name)
               (not (get-buffer-window "*Fuzzy Completions*"))
               (not (get-buffer-window "*Completions*"))
               (not (get-window-with-predicate
-                    #'slime-apprentice-window-p
+                    #'apprentice-window-p
                     nil t)))
-         (slime-apprentice-display-apprentice-buffer))
+         (apprentice-display-apprentice-buffer))
         ((and (or (eql major-mode 'lisp-mode)
                   (eql major-mode 'slime-repl-mode))
-              (get-buffer slime-apprentice-buffer-name))
-         (slime-apprentice-set-input-from-point-maybe)
-         (walk-windows #'slime-apprentice-update-if-live-window
+              (get-buffer apprentice-buffer-name))
+         (apprentice-set-input-from-point-maybe)
+         (walk-windows #'apprentice-update-if-live-window
                        nil t))))
 
-(defun slime-apprentice-reinitialize-continuous-timer ()
+(defun apprentice-reinitialize-continuous-timer ()
   (interactive)
-  (ignore-errors (cancel-timer slime-apprentice-describe-timer))
-  (setf slime-apprentice-update-mode 'continuous)
-  (setf slime-apprentice-describe-timer
+  (ignore-errors (cancel-timer apprentice-describe-timer))
+  (setf apprentice-update-mode 'continuous)
+  (setf apprentice-describe-timer
         (run-with-timer 0
-                        slime-apprentice-polling-frequency
-                        'slime-apprentice-timer-function))
+                        apprentice-polling-frequency
+                        'apprentice-timer-function))
   (message "Continuous mode."))
 
-(defun slime-apprentice-reinitialize-idle-timer ()
+(defun apprentice-reinitialize-idle-timer ()
   (interactive)
-  (ignore-errors (cancel-timer slime-apprentice-describe-timer))
-  (setf slime-apprentice-update-mode 'idle)
-  (setf slime-apprentice-describe-timer
-        (run-with-idle-timer slime-apprentice-polling-frequency
+  (ignore-errors (cancel-timer apprentice-describe-timer))
+  (setf apprentice-update-mode 'idle)
+  (setf apprentice-describe-timer
+        (run-with-idle-timer apprentice-polling-frequency
                              t
-                             'slime-apprentice-timer-function))
+                             'apprentice-timer-function))
   (message "Idle mode."))
 
-(defun slime-apprentice-reinitialize-timer ()
+(defun apprentice-reinitialize-timer ()
   (interactive)
-  (ignore-errors (cancel-timer slime-apprentice-describe-timer))
-  (if (eql slime-apprentice-update-mode 'idle)
-      (slime-apprentice-reinitialize-idle-timer)
-    (slime-apprentice-reinitialize-continuous-timer)))
+  (ignore-errors (cancel-timer apprentice-describe-timer))
+  (if (eql apprentice-update-mode 'idle)
+      (apprentice-reinitialize-idle-timer)
+    (apprentice-reinitialize-continuous-timer)))
 
-(defun slime-apprentice-toggle-update-mode ()
+(defun apprentice-toggle-update-mode ()
   (interactive)
-  (if (eql slime-apprentice-update-mode 'idle)
-      (slime-apprentice-reinitialize-continuous-timer)
-    (slime-apprentice-reinitialize-idle-timer)))
+  (if (eql apprentice-update-mode 'idle)
+      (apprentice-reinitialize-continuous-timer)
+    (apprentice-reinitialize-idle-timer)))
 
-(defun slime-apprentice-cancel-timer ()
+(defun apprentice-cancel-timer ()
   (interactive)
-  (cancel-timer slime-apprentice-describe-timer))
+  (cancel-timer apprentice-describe-timer))
 
-(defun slime-apprentice-input-property (property-name)
-  (cl-getf (cdr slime-apprentice-input) property-name))
+(defun apprentice-input-property (property-name)
+  (cl-getf (cdr apprentice-input) property-name))
 
-(defun slime-apprentice-set-input-property (property-name value)
-  (setf (cl-getf (cdr slime-apprentice-input) property-name) value))
+(defun apprentice-set-input-property (property-name value)
+  (setf (cl-getf (cdr apprentice-input) property-name) value))
 
-(defun slime-apprentice-lock-apprentice ()
+(defun apprentice-lock-apprentice ()
   (interactive)
-  (slime-apprentice-check-apprentice-buffer)
+  (apprentice-check-apprentice-buffer)
   (let ((buffer-name
          (format "%s:%s"
-                 slime-apprentice-buffer-name
-                 (cl-case (car slime-apprentice-input)
-                   (symbol (slime-apprentice-input-property :name))
-                   (presentation (slime-apprentice-input-property :id))
-                   (looking-at (slime-apprentice-input-property
+                 apprentice-buffer-name
+                 (cl-case (car apprentice-input)
+                   (symbol (apprentice-input-property :name))
+                   (presentation (apprentice-input-property :id))
+                   (looking-at (apprentice-input-property
                                 :following-char))
-                   (form (let ((string (slime-apprentice-input-property
+                   (form (let ((string (apprentice-input-property
                                         :string)))
                            (when string
                              (substring string 0 (min 20 (length string))))))))))
     (cond ((get-buffer buffer-name)
            (switch-to-buffer buffer-name))
           (t (rename-buffer buffer-name)
-             (setf slime-apprentice-locked-p t)
-             (let ((slime-apprentice-force-update t))
-               (slime-apprentice-update-apprentice-buffer buffer-name))
-             (slime-apprentice-create-apprentice-buffer)))))
+             (setf apprentice-locked-p t)
+             (let ((apprentice-force-update t))
+               (apprentice-update-apprentice-buffer buffer-name))
+             (apprentice-create-apprentice-buffer)))))
 
-(defun slime-apprentice-lock-apprentice-and-split ()
+(defun apprentice-lock-apprentice-and-split ()
   (interactive)
-  (slime-apprentice-lock-apprentice)
+  (apprentice-lock-apprentice)
   (split-window)
-  (switch-to-buffer slime-apprentice-buffer-name))
+  (switch-to-buffer apprentice-buffer-name))
 
-(defun slime-apprentice-display-apprentice-buffer ()
-  (slime-apprentice-create-apprentice-buffer)
-  (slime-apprentice-set-input-from-point-maybe)
-  (let ((slime-apprentice-force-update t))
-    (slime-apprentice-update-the-apprentice-buffer))
-  (display-buffer slime-apprentice-buffer-name))
+(defun apprentice-display-apprentice-buffer ()
+  (apprentice-create-apprentice-buffer)
+  (apprentice-set-input-from-point-maybe)
+  (let ((apprentice-force-update t))
+    (apprentice-update-the-apprentice-buffer))
+  (display-buffer apprentice-buffer-name))
 
 ;; Interactive function
-(defun slime-apprentice-describe (prefix)
+(defun apprentice-describe (prefix)
   (interactive "P")
   (if prefix
-      (slime-apprentice-describe-form)
+      (apprentice-describe-form)
     (progn
-      (unless slime-apprentice-describe-timer
-        (slime-apprentice-reinitialize-timer))
-      (slime-apprentice-display-apprentice-buffer))))
+      (unless apprentice-describe-timer
+        (apprentice-reinitialize-timer))
+      (apprentice-display-apprentice-buffer))))
 
 ;; Interactive function
-(defun slime-apprentice-describe-form ()
+(defun apprentice-describe-form ()
   (interactive)
   (let ((form (save-excursion
                 (let (begin end)
@@ -707,16 +707,16 @@
                   (forward-sexp)
                   (setf end (point))
                   (buffer-substring-no-properties begin end)))))
-    (unless slime-apprentice-describe-timer
-      (slime-apprentice-reinitialize-timer))
-    (slime-apprentice-create-apprentice-buffer)
-    (slime-apprentice-set-buffer-input
+    (unless apprentice-describe-timer
+      (apprentice-reinitialize-timer))
+    (apprentice-create-apprentice-buffer)
+    (apprentice-set-buffer-input
      (list 'form
            :string form
-           :package (slime-apprentice-package))
-     slime-apprentice-buffer-name
-     (slime-apprentice-build-context))
-    (let ((slime-apprentice-force-update t))
-      (slime-apprentice-update-the-apprentice-buffer))
-    (display-buffer slime-apprentice-buffer-name)))
+           :package (apprentice-package))
+     apprentice-buffer-name
+     (apprentice-build-context))
+    (let ((apprentice-force-update t))
+      (apprentice-update-the-apprentice-buffer))
+    (display-buffer apprentice-buffer-name)))
 
