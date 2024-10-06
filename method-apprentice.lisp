@@ -13,7 +13,7 @@
     t))
 
 (defun method-apprentice-dim-current-line ()
-  (swank:eval-in-emacs 
+  (swank:eval-in-emacs
    '(progn
      (with-current-buffer slime-apprentice-buffer-name
        (add-text-properties (save-excursion
@@ -39,21 +39,21 @@
       (when methods
         (format t "Methods of ~A:~2%" object)
         (dolist (method methods)
-          (let ((readable (method-apprentice-method-description 
+          (let ((readable (method-apprentice-method-description
                            ap method)))
-            (destructuring-bind (&key specializers qualifiers) 
+            (destructuring-bind (&key specializers qualifiers)
                 readable
               (if qualifiers
                   (format t "(~{~S~^ ~})~{ ~S~} "
                           specializers
                           qualifiers)
-                  (format t "(~{~S~^ ~}) " 
+                  (format t "(~{~S~^ ~}) "
                           specializers))
-              (put-lisp-button-here ap 
-                                    "REMOVE"
+              (put-lisp-button-here ap
+                                    "[REMOVE]"
                                     `(progn
                                        (method-apprentice-remove-method
-                                        (find-method 
+                                        (find-method
                                          #',object
                                          ',qualifiers
                                          ',specializers))
@@ -63,7 +63,7 @@
 
 (defmethod method-apprentice-method-description ((ap method-apprentice)
                                                  method)
-  (list :specializers 
+  (list :specializers
         (mapcar (lambda (spec)
                   (if (typep spec 'class)
                       (class-name spec)

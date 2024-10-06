@@ -1,6 +1,7 @@
 ;;;; Requires
 ;;;;   slime-apprentice
 ;;;;   "caching-apprentice"
+;;;;   "buttons"
 
 ;;;; Grep apprentice
 
@@ -47,9 +48,12 @@
     (let ((files)
           (string (symbol-name object))
           (buffer-context-filename
-            (getf *buffer-context* :filename))
+            (let ((f (getf *buffer-context* :filename)))
+              (when f
+                (truename f))))
           (results)
           (offset *standard-output*))
+
       (with-output-to-string (*standard-output*)
         (if (recursive apprentice)
             (grep-apprentice-walk-lisp-files
@@ -63,12 +67,28 @@
                               "*.lisp"
                               buffer-context-filename)
                              "*.lisp"))))
+        (create-ephemeral-elisp-function
+         apprentice 'grep-apprentice-button
+         '(lambda (symbol-name filename)
+           (progn (find-file-other-window filename)
+                  (condition-case
+                   nil
+                   (progn
+                     (search-forward symbol-name)
+                     (slime-flash-region
+                      (match-beginning 0)
+                      (match-end 0)
+                      0.5)
+                     (end-of-line))
+                   (error (beginning-of-buffer)))
+                  (other-window 1))))
         (dolist (file files)
           (let ((count (count-matching-lines string file)))
             (unless (zerop count)
-              (push (list (enough-namestring file (or (path apprentice)
-                                                      buffer-context-filename
-                                                      *default-pathname-defaults*))
+              (push (list (enough-namestring file
+                                             (or (path apprentice)
+                                                 buffer-context-filename
+                                                 *default-pathname-defaults*))
                           count
                           (namestring file))
                     results))))
@@ -78,25 +98,16 @@
           (setf results (sort results #'> :key #'second))
           (terpri)
           (terpri)
-          (dolist  (r results)
+          (dolist (r results)
             (put-elisp-button-here
              apprentice
              (format nil "~A: ~A"
                      (first r)
                      (second r))
-             `(progn (find-file-other-window ,(third r))
-                     (condition-case
-                      nil
-                      (progn
-                        (search-forward ,(symbol-name object))
-                        (slime-flash-region
-                         (match-beginning 0)
-                         (match-end 0)
-                         0.5)
-                        (next-line)
-                        (beginning-of-line))
-                      (error (beginning-of-buffer)))
-                     (other-window 1))
+             nil
+             :name 'grep-apprentice-button
+             :arguments (list (symbol-name object)
+                              (third r))
              :offset offset)
             (terpri))
           (fresh-line))))))

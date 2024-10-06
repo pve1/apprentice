@@ -111,9 +111,12 @@
 (defgeneric Resolve-symbol (apprentice symbol-name))
 
 (defmethod resolve-symbol (apprentice symbol-name)
+  (let* ((pkg-string (getf *buffer-context* :package))
+         (pkg (find-package (read-from-string pkg-string)))
+         (*package* (or pkg *package*)))
   (with-eclector-client 'default-resolve-symbol
     (catch 'symbol
-      (eclector.reader:read-from-string symbol-name))))
+      (eclector.reader:read-from-string symbol-name)))))
 
 (defun Symbol-description (symbol-name)
   (check-type symbol-name string)

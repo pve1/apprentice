@@ -28,6 +28,8 @@
                       :for line-number :from 1
                       :until (eq line s)
                       :when (and (< 0 (length line))
+                                 (eql #\( (alexandria:first-elt line))
+                                 #+n
                                  (not (member (alexandria:first-elt line)
                                               '(#\Space #\Tab #\;))))
                       :do (put-elisp-button-here
@@ -60,6 +62,9 @@
                        :accessor ignore-line-regexp
                        :initform "^ *$|^;|^\\(in-package")))
 
+;; Singleton
+(defvar *toplevel-apprentice* nil)
+
 (defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
   (setf *toplevel-apprentice* w)
@@ -67,37 +72,41 @@
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
 
-;; Singleton
-(defvar *toplevel-apprentice* nil)
-
 ;; Hack
 (defmethod apprentice-update ((ap wide-toplevel-apprentice)
                               object)
   (let ((offset (file-position *standard-output*))
         (ignore-line-scanner (ignore-line-regexp ap))
         (string))
+    (create-ephemeral-elisp-function
+     ap 'toplevel-apprentice-button
+     '(lambda (line-number file)
+       (let ((current-window (get-buffer-window)))
+         (goto-line line-number
+                    (find-file-other-window
+                     file))
+         (if current-window
+             (select-window current-window)
+             (other-window 1)))))
     (flet ((walk (lisp-file stream)
              (alexandria:with-input-from-file (s lisp-file)
                (loop :for line = (read-line s nil s)
                      :for line-number :from 1
                      :until (eq line s)
                      :when (and (< 0 (length line))
+                                (eql #\( (alexandria:first-elt line))
+                                #+n
                                 (not (member (alexandria:first-elt line)
                                              '(#\Space #\Tab #\;)))
                                 (not (cl-ppcre:scan
                                       ignore-line-scanner
                                       line)))
                      :do (put-elisp-button-here
-                          ap
-                          line
-                          `(let ((current-window
-                                   (get-buffer-window)))
-                             (goto-line ,line-number
-                                        (find-file-other-window
-                                         ,(namestring lisp-file)))
-                             (if current-window
-                                 (select-window current-window)
-                                 (other-window 1)))
+                          ap line nil
+                          :name
+                          'toplevel-apprentice-button
+                          :arguments (list line-number
+                                           (namestring lisp-file))
                           :face :unspecified
                           :offset offset
                           :stream stream)
@@ -126,13 +135,15 @@
                       (getf *buffer-context* :filename))
                      (merge-pathnames "*.lisp"))))
                (:file
-                (list (getf *buffer-context* :filename))))))
+                (alexandria:when-let ((file (getf *buffer-context*
+                                                  :filename)))
+                  (list file))))))
       (setf string
             (with-output-to-string (result)
               (format result "Toplevel forms: ")
               (put-lisp-button-here
                ap
-               "FILE"
+               "[FILE]"
                '(setf (file-selection-mode *toplevel-apprentice*)
                  :file)
                :stream result
@@ -141,7 +152,7 @@
               (princ " " result)
               (put-lisp-button-here
                ap
-               "DIR"
+               "[DIR]"
                '(setf (file-selection-mode *toplevel-apprentice*)
                  :directory)
                :stream result
@@ -150,7 +161,7 @@
               (princ " " result)
               (put-lisp-button-here
                ap
-               "SORT"
+               "[SORT]"
                '(setf (sort-lines-p *toplevel-apprentice*)
                  (not (sort-lines-p *toplevel-apprentice*)))
                :stream result
@@ -173,16 +184,11 @@
                       (destructuring-bind (&key line line-number file)
                           line
                         (put-elisp-button-here
-                         ap
-                         line
-                         `(let ((current-window
-                                  (get-buffer-window)))
-                            (goto-line ,line-number
-                                       (find-file-other-window
-                                        ,(namestring file)))
-                            (if current-window
-                                (select-window current-window)
-                                (other-window 1)))
+                         ap line nil
+                         :name
+                         'toplevel-apprentice-button
+                         :arguments (list line-number
+                                          (namestring file))
                          :face :unspecified
                          :offset offset
                          :stream result)

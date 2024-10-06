@@ -26,9 +26,19 @@
    (interesting-symbol-function
     :initarg :interesting-symbol-function
     :accessor interesting-symbol-function
-    :initform (lambda (x)
-                (declare (ignore x))
-                t))))
+    :initform (constantly t))
+   (ignore-input-function
+    :initarg :ignore-input-function
+    :accessor ignore-input-function
+    :initform (constantly nil))))
+
+(defmethod initialize-instance :after ((a apropos-apprentice)
+                                       &key min-length)
+  (when min-length
+    (check-type min-length integer)
+    (setf (ignore-input-function a)
+          (lambda (x)
+            (< (length (symbol-name x)) min-length)))))
 
 (defmethod eclector.reader:interpret-symbol ((client (eql 'collect-packages))
                                              input-stream
@@ -55,6 +65,9 @@
 
 (defmethod apprentice-update ((ap apropos-apprentice)
                               (object symbol))
+  (alexandria:when-let* ((fn (ignore-input-function ap))
+                         (ignore (funcall fn object)))
+    (return-from apprentice-update nil))
   (let* ((package-indicator (get object 'package-indicator))
          (symbol-package (symbol-package object))
          (symbols (make-hash-table))

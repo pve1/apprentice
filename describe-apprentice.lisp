@@ -22,17 +22,18 @@
         (cond ((and (eq sym object)
                     (not (eq :inherited state)))
                (put-lisp-button-here ap
-                                     "UNINTERN"
+                                     "[UNINTERN]"
                                      `(unintern ',object
                                                 (find-package
                                                  ,(package-name *package*)))
-                                     :stream stream))
+                                     :stream stream
+                                     :redisplay t))
               ((and (eq sym object)
                     (eq :inherited state))
                (space)
                (put-lisp-button-here
                 ap
-                "SHADOW"
+                "[SHADOW]"
                 `(shadow ',object (find-package
                                    ,(package-name *package*)))
                 :stream stream))))
@@ -44,31 +45,35 @@
                (space)
                (put-lisp-button-here
                 ap
-                "UNEXPORT"
+                "[UNEXPORT]"
                 `(unexport ',object (find-package ,(package-name *package*)))
-                :stream stream))
+                :stream stream
+                :redisplay t))
               ((eq object sym)
                (space)
                (put-lisp-button-here
                 ap
-                "EXPORT"
+                "[EXPORT]"
                 `(export ',object (find-package ,(package-name *package*)))
-                :stream stream))))
+                :stream stream
+                :redisplay t))))
       ;; Makunbound
       (when (and (boundp object)
                  (not (keywordp object)))
         (space)
         (put-lisp-button-here ap
-                              "MAKUNBOUND"
+                              "[MAKUNBOUND]"
                               `(makunbound ',object)
-                              :stream stream))
+                              :stream stream
+                              :redisplay t))
       ;; Fmakunbound
       (when (fboundp object)
         (space)
         (put-lisp-button-here ap
-                              "FMAKUNBOUND"
+                              "[FMAKUNBOUND]"
                               `(fmakunbound ',object)
-                              :stream stream))
+                              :stream stream
+                              :redisplay t))
       ;; Methods
       (when (and (fboundp object)
                  (typep (fdefinition object) 'generic-function)
@@ -77,7 +82,7 @@
         (space)
         (put-lisp-button-here
          ap
-         "METHODS"
+         "[METHODS]"
          `(set-temporary-apprentice 'method-apprentice
                                     (lambda (ap obj str)
                                       (terpri str)
