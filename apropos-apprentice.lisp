@@ -1,5 +1,5 @@
 ;;;; Requires
-;;;;   slime-apprentice
+;;;;   apprentice
 ;;;;   "caching-apprentice"
 
 ;;;; Apropos apprentice
@@ -17,7 +17,7 @@
 ;; current file to show external symbols. Also show internal apropos
 ;; of *package*.
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Apropos-apprentice (caching-apprentice)
   ((busy-result :initarg :busy-result

@@ -1,7 +1,7 @@
 ;;;; Requires
-;;;;   slime-apprentice
+;;;;   apprentice
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Value-apprentice ()
   ())
@@ -14,3 +14,4 @@
          (format stream "Value description:~%~%")
          (describe (symbol-value object) stream)
          t)))
+

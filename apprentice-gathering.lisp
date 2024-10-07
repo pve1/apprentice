@@ -1,8 +1,8 @@
 ;;;; Requires
-;;;;   slime-apprentice
+;;;;   apprentice
 ;;;;   "caching-apprentice"
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Apprentice-gathering ()
   ((apprentices :initarg :apprentices
@@ -30,7 +30,7 @@
     (flet ((print-divider-maybe ()
              (unless divider-printed
                (fresh-line stream)
-               (with-face ("slime-apprentice-divider" stream)
+               (with-face ("apprentice-divider" stream)
                  (princ (apprentice-gathering-divider ap) stream))
                (fresh-line stream)
                (setf divider-printed t))))

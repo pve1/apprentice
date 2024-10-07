@@ -1,7 +1,7 @@
 ;;;; Requires
-;;;;   slime-apprentice
+;;;;   apprentice
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass temporary-apprentice ()
   ((original-apprentice :initarg :original-apprentice

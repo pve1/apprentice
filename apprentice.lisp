@@ -3,7 +3,7 @@
 ;;;;   eclector
 ;;;;   "package"
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defvar *Apprentice* (lambda (object stream)
                        (describe object stream)))

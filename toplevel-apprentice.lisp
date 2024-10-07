@@ -1,9 +1,9 @@
 ;;;; Requires
 ;;;;   cl-ppcre
-;;;;   "slime-apprentice"
+;;;;   "apprentice"
 ;;;;   "buttons"
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Toplevel-apprentice (caching-apprentice)
   ((busy-result :initarg :busy-result

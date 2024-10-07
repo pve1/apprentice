@@ -1,9 +1,9 @@
 ;;;; Requires
-;;;;   "slime-apprentice"
+;;;;   "apprentice"
 ;;;;   "buttons"
 ;;;;   "temporary-apprentice"
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Describe-apprentice ()
   ())

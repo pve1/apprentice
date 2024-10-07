@@ -2,9 +2,9 @@
 ;;;;   package.seed
 ;;;;   capitalized-export
 
-(package.seed:define-package :slime-apprentice)
+(package.seed:define-package :apprentice)
 
-(in-package :slime-apprentice)
+(in-package :apprentice)
 
 (define-symbol-macro cx
     (eval-when (:compile-toplevel :load-toplevel :execute)

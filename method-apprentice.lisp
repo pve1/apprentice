@@ -1,8 +1,8 @@
 ;;;; Requires
-;;;;   "slime-apprentice"
+;;;;   "apprentice"
 ;;;;   "buttons"
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Method-apprentice ()
   ())
@@ -15,15 +15,15 @@
 (defun method-apprentice-dim-current-line ()
   (swank:eval-in-emacs
    '(progn
-     (with-current-buffer slime-apprentice-buffer-name
+     (with-current-buffer apprentice-buffer-name
        (add-text-properties (save-excursion
                              (beginning-of-line)
                              (point))
         (save-excursion
          (end-of-line)
          (point))
-        '(face slime-apprentice-dim-face
-          font-lock-face slime-apprentice-dim-face))))))
+        '(face apprentice-dim-face
+          font-lock-face apprentice-dim-face))))))
 
 (defmethod describe-with-apprentice ((ap method-apprentice)
                                      (object symbol)

@@ -1,11 +1,11 @@
 ;;;; Requires
-;;;;   slime-apprentice
+;;;;   apprentice
 ;;;;   "caching-apprentice"
 ;;;;   "buttons"
 
 ;;;; Grep apprentice
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass Grep-apprentice (caching-apprentice)
   ((path :initarg :path

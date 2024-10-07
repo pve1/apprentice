@@ -1,9 +1,9 @@
 ;;;; Requires
 ;;;;   fset
-;;;;   slime-apprentice
-;;;;   slime-apprentice/buttons
+;;;;   apprentice
+;;;;   apprentice/buttons
 
-(in-package :slime-apprentice) cx
+(in-package :apprentice) cx
 
 (defclass History-apprentice ()
   ((history :initarg :history
