@@ -25,6 +25,7 @@
 (defvar apprentice-eager-p t)
 (defvar apprentice-update-apprentice-buffer-hook
   nil)
+(defvar apprentice-inhibit-update-p nil)
 
 ;; Valid members are:
 ;; - toplevel-form
@@ -555,7 +556,7 @@
                               (slime-presentation-id presentation))))
       (when presentation-id
         (cl-return-from determine-input
-          `(presentation :id presentation-id
+          `(presentation :id ,presentation-id
                          ,@(apprentice-build-context)))))
     ;; Symbol?
     (let* ((symbol (thing-at-point 'symbol t)))
@@ -592,21 +593,22 @@
 
 (defun apprentice-timer-function ()
   (interactive)
-  (cond ((and apprentice-eager-p
-              (eql major-mode 'lisp-mode)
-              (get-buffer apprentice-buffer-name)
-              (not (get-buffer-window "*Fuzzy Completions*"))
-              (not (get-buffer-window "*Completions*"))
-              (not (get-window-with-predicate
-                    #'apprentice-window-p
-                    nil t)))
-         (apprentice-display-apprentice-buffer))
-        ((and (or (eql major-mode 'lisp-mode)
-                  (eql major-mode 'slime-repl-mode))
-              (get-buffer apprentice-buffer-name))
-         (apprentice-set-input-from-point-maybe)
-         (walk-windows #'apprentice-update-if-live-window
-                       nil t))))
+  (unless apprentice-inhibit-update-p
+    (cond ((and apprentice-eager-p
+                (eql major-mode 'lisp-mode)
+                (get-buffer apprentice-buffer-name)
+                (not (get-buffer-window "*Fuzzy Completions*"))
+                (not (get-buffer-window "*Completions*"))
+                (not (get-window-with-predicate
+                      #'apprentice-window-p
+                      nil t)))
+           (apprentice-display-apprentice-buffer))
+          ((and (or (eql major-mode 'lisp-mode)
+                    (eql major-mode 'slime-repl-mode))
+                (get-buffer apprentice-buffer-name))
+           (apprentice-set-input-from-point-maybe)
+           (walk-windows #'apprentice-update-if-live-window
+                         nil t)))))
 
 (defun apprentice-reinitialize-continuous-timer ()
   (interactive)

@@ -41,6 +41,44 @@
 (defmethod apprentice-description-heading ((ap grep-apprentice))
   "Mentions: ")
 
+(defmethod grep-apprentice-query-replace (ap file from to)
+  (swank:eval-in-emacs
+   `(let ((buf (get-file-buffer ,file)))
+      (when buf
+        (display-buffer buf)
+        (with-current-buffer buf
+          (beginning-of-buffer)
+          (query-replace ,from ,to))
+        t))))
+
+(defmethod grep-apprentice-insert-replace-button (ap from files
+                                                  &key offset)
+  (put-elisp-button-here
+   ap "[REPLACE]"
+   `(let ((replacement (read-from-minibuffer "Replacement: "
+                                             ,from))
+          (files ',(reverse (mapcar #'namestring files)))
+          (orig-buf (current-buffer)))
+      (dolist (file ',(reverse (mapcar #'namestring files)))
+        (let ((buf (get-file-buffer file)))
+          (when buf
+            (switch-to-buffer buf)
+            (unwind-protect
+                 (progn (setf apprentice-inhibit-update-p t)
+                        (beginning-of-buffer)
+                        (query-replace
+                         ,from
+                         replacement nil)
+                        (when (y-or-n-p
+                               (format "Save %s buffers? " (length files)))
+                          (dolist (file files)
+                            (with-current-buffer (get-file-buffer file)
+                              (save-buffer))))
+                        t)
+              (setf apprentice-inhibit-update-p nil)
+              (switch-to-buffer orig-buf))))))
+   :offset offset))
+
 ;;; Note: depends on slime-flash-region
 (defmethod apprentice-update ((apprentice grep-apprentice)
                               (object symbol))
@@ -53,7 +91,6 @@
                 (truename f))))
           (results)
           (offset *standard-output*))
-
       (with-output-to-string (*standard-output*)
         (if (recursive apprentice)
             (grep-apprentice-walk-lisp-files
@@ -67,6 +104,7 @@
                               "*.lisp"
                               buffer-context-filename)
                              "*.lisp"))))
+        ;; Clicking jumps to the next match.
         (create-ephemeral-elisp-function
          apprentice 'grep-apprentice-button
          '(lambda (symbol-name filename)
@@ -95,6 +133,11 @@
         (fresh-line)
         (princ "Mentions: ")
         (when results
+          (grep-apprentice-insert-replace-button
+           apprentice
+           (string-downcase (symbol-name object))
+           (mapcar #'third results)
+           :offset offset)
           (setf results (sort results #'> :key #'second))
           (terpri)
           (terpri)
