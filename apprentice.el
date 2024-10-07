@@ -22,7 +22,7 @@
 (defvar apprentice-force-update nil)
 (defvar apprentice-describe-timer nil)
 (defvar apprentice-active-in-strings nil)
-(defvar apprentice-eager-p t)
+(defvar apprentice-eager-p nil)
 (defvar apprentice-update-apprentice-buffer-hook
   nil)
 (defvar apprentice-inhibit-update-p nil)

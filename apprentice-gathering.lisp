@@ -9,7 +9,7 @@
                 :accessor apprentices
                 :initform nil)))
 
-(defmethod Apprentice-gathering-divider ((ap apprentice-gathering))
+(defmethod Apprentice-gathering-divider (apprentice)
   "------------------------------------------------------------")
 
 (defmacro with-face ((face &optional (stream '*standard-output*))
