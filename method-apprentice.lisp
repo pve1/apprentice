@@ -7,6 +7,8 @@
 (defclass Method-apprentice ()
   ())
 
+(defvar *method-apprentice-methods* nil)
+
 (defun method-apprentice-remove-method (method)
   (let ((gf (closer-mop:method-generic-function method)))
     (remove-method gf method)
@@ -38,27 +40,31 @@
                                  methods)))
       (when methods
         (format t "Methods of ~A:~2%" object)
-        (dolist (method methods)
-          (let ((readable (method-apprentice-method-description
-                           ap method)))
-            (destructuring-bind (&key specializers qualifiers)
-                readable
-              (if qualifiers
-                  (format t "(~{~S~^ ~})~{ ~S~} "
-                          specializers
-                          qualifiers)
-                  (format t "(~{~S~^ ~}) "
-                          specializers))
-              (put-lisp-button-here ap
-                                    "[REMOVE]"
-                                    `(progn
-                                       (method-apprentice-remove-method
-                                        (find-method
-                                         #',object
-                                         ',qualifiers
-                                         ',specializers))
-                                       (method-apprentice-dim-current-line)))
-              (terpri))))
+        (setf *method-apprentice-methods*
+              (loop :for m :in methods
+                    :for i :from 0
+                    :collect (list i m)))
+        (loop :for method :in methods
+              :for i :from 0
+              :do (let ((readable (method-apprentice-method-description
+                                   ap method)))
+                    (destructuring-bind (&key specializers qualifiers)
+                        readable
+                      (if qualifiers
+                          (format t "(~{~S~^ ~})~{ ~S~} "
+                                  specializers
+                                  qualifiers)
+                          (format t "(~{~S~^ ~}) "
+                                  specializers))
+                      (put-lisp-button-here
+                       ap
+                       "[REMOVE]"
+                       `(progn
+                          (method-apprentice-remove-method
+                           (second (assoc ,i *method-apprentice-methods*)))
+                          (setf *method-apprentice-methods* nil)
+                          (method-apprentice-dim-current-line)))
+                      (terpri))))
         t))))
 
 (defmethod method-apprentice-method-description ((ap method-apprentice)

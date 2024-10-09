@@ -63,11 +63,11 @@
                        :initform "^ *$|^;|^\\(in-package")))
 
 ;; Singleton
-(defvar *toplevel-apprentice* nil)
+;; (defvar *toplevel-apprentice* nil)
 
 (defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
-  (setf *toplevel-apprentice* w)
+  ;; (setf *toplevel-apprentice* w)
   (when (stringp ignore-line-regexp)
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
@@ -135,8 +135,9 @@
                       (getf *buffer-context* :filename))
                      (merge-pathnames "*.lisp"))))
                (:file
-                (alexandria:when-let ((file (getf *buffer-context*
-                                                  :filename)))
+                (alexandria:when-let* ((file (getf *buffer-context*
+                                                   :filename))
+                                       (exist (probe-file file)))
                   (list file))))))
       (setf string
             (with-output-to-string (result)
@@ -144,7 +145,7 @@
               (put-lisp-button-here
                ap
                "[FILE]"
-               '(setf (file-selection-mode *toplevel-apprentice*)
+               '(setf (file-selection-mode *callback-apprentice*)
                  :file)
                :stream result
                :offset offset
@@ -153,7 +154,7 @@
               (put-lisp-button-here
                ap
                "[DIR]"
-               '(setf (file-selection-mode *toplevel-apprentice*)
+               '(setf (file-selection-mode *callback-apprentice*)
                  :directory)
                :stream result
                :offset offset
@@ -162,8 +163,8 @@
               (put-lisp-button-here
                ap
                "[SORT]"
-               '(setf (sort-lines-p *toplevel-apprentice*)
-                 (not (sort-lines-p *toplevel-apprentice*)))
+               '(setf (sort-lines-p *callback-apprentice*)
+                 (not (sort-lines-p *callback-apprentice*)))
                :stream result
                :offset offset
                :redisplay t)
@@ -185,8 +186,7 @@
                           line
                         (put-elisp-button-here
                          ap line nil
-                         :name
-                         'toplevel-apprentice-button
+                         :name 'toplevel-apprentice-button
                          :arguments (list line-number
                                           (namestring file))
                          :face :unspecified
