@@ -14,6 +14,7 @@
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
 (defvar *description-properties* nil)
+(defvar *before-describe-hook* nil)
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:method (apprentice object stream)
@@ -48,6 +49,11 @@
               *previous-description* desc))
       :max-size-exceeded))
 
+(defun run-hook (hook)
+  (when hook
+    (dolist (f hook)
+      (funcall f))))
+
 (defun funcall-maybe (package symbol &rest args)
   (let* ((sym (find-symbol (string symbol) (string package)))
          (fun (if sym
@@ -59,6 +65,7 @@
 
 (defun Presentation-description (presentation-id)
   (let* ((desc (with-output-to-string (s)
+                 (run-hook *before-describe-hook*)
                  (describe-with-apprentice
                   *apprentice*
                   (funcall-maybe '#:swank '#:lookup-presented-object
@@ -129,6 +136,7 @@
        symbol
        (with-output-to-string (s)
          (let ((*description-stream* s))
+           (run-hook *before-describe-hook*)
            (describe-with-apprentice *apprentice*
                                      symbol
                                      s)))))))
@@ -197,17 +205,26 @@
                    :accessor following-char
                    :initform nil)))
 
+(defmethod print-object ((l looking-at-character) stream)
+  (print-unreadable-object (l stream :type t)
+    (format stream "~S ~S"
+            (preceding-char l)
+            (following-char l)))
+  l)
+
 (defun Character-description (preceding-char following-char)
   (let* ((*description-properties* nil))
     (return-description
      (list 'looking-at preceding-char following-char)
      (with-output-to-string (s)
        (let ((*description-stream* s))
+         (run-hook *before-describe-hook*)
          (describe-with-apprentice
           *apprentice*
           (make-instance 'looking-at-character
-            :following-char following-char
-            :preceding-char preceding-char)
+            :following-char (when following-char
+                              (aref following-char 0))
+            :preceding-char (when preceding-char
+                              (aref preceding-char 0)))
           s))))))
-
 
