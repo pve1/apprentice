@@ -69,14 +69,14 @@
                         (query-replace
                          ,from
                          replacement nil)
-                        (when (y-or-n-p
-                               (format "Save %s buffers? " (length files)))
-                          (dolist (file files)
-                            (with-current-buffer (get-file-buffer file)
-                              (save-buffer))))
                         t)
               (setf apprentice-inhibit-update-p nil)
-              (switch-to-buffer orig-buf))))))
+              (switch-to-buffer orig-buf)))))
+      (when (y-or-n-p (format "Save %s buffers? "
+                              (length files)))
+        (dolist (file files)
+          (with-current-buffer (get-file-buffer file)
+            (save-buffer)))))
    :offset offset))
 
 ;;; Note: depends on slime-flash-region
