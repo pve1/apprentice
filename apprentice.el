@@ -33,7 +33,7 @@
 ;; - package
 ;; - filename
 ;; - point
-;; - current-line
+;; - line
 ;; - max-line
 (defvar apprentice-provide-context '())
 
@@ -533,8 +533,10 @@
   (when apprentice-provide-context
     `(,@(when (member 'point apprentice-provide-context)
           (list :point (point)))
-      ,@(when (member 'current-line apprentice-provide-context)
-          (list :current-line (line-number-at-pos)))
+      ,@(when (member 'column apprentice-provide-context)
+          (list :column (current-column)))
+      ,@(when (member 'line apprentice-provide-context)
+          (list :line (line-number-at-pos)))
       ,@(when (member 'max-line apprentice-provide-context)
           (list :max-line (line-number-at-pos (point-max))))
       ,@(when (member 'enclosing-form apprentice-provide-context)
