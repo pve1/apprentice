@@ -95,6 +95,10 @@
               (get symbol 'unspecified-symbol) t)
         (throw 'symbol symbol)))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (boundp '+nil+)
+    (defconstant +nil+ (make-symbol "NIL"))))
+
 (defmethod eclector.reader:interpret-symbol ((client (eql 'default-resolve-symbol))
                                              input-stream
                                              package-indicator
@@ -105,8 +109,12 @@
              (setf (get sym 'package-indicator) pkg)
              sym)))
     (cond ((eq :current package-indicator)
-           (or (find-symbol symbol-name *package*)
-               (anonymous-symbol (package-name *package*))))
+           (multiple-value-bind (sym exist)
+               (find-symbol symbol-name *package*)
+             (cond ((and exist (null sym))
+                    +nil+)
+                   (exist sym)
+                   (t (anonymous-symbol (package-name *package*))))))
           ((eq :keyword package-indicator)
            (or (find-symbol symbol-name (find-package :keyword))
                (anonymous-symbol "KEYWORD")))
@@ -132,6 +140,8 @@
                   (resolve-symbol *apprentice* symbol-name)))
          (*description-properties* nil))
     (when symbol
+      (when (eq symbol +nil+)
+        (setf symbol nil))
       (return-description
        symbol
        (with-output-to-string (s)
