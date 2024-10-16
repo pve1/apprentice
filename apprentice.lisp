@@ -9,7 +9,8 @@
                        (describe object stream)))
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
-(defvar *Buffer-context* nil)
+(defvar *Buffer-context* nil
+  ":point :column :line :max-line :package :filename :locked")
 (defvar *Description-stream* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
@@ -95,6 +96,7 @@
               (get symbol 'unspecified-symbol) t)
         (throw 'symbol symbol)))))
 
+;; Handle cl:nil specially.
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (boundp '+nil+)
     (defconstant +nil+ (make-symbol "NIL"))))
