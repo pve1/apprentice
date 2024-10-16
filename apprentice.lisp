@@ -5,8 +5,7 @@
 
 (in-package :apprentice) cx
 
-(defvar *Apprentice* (lambda (object stream)
-                       (describe object stream)))
+(defvar *Apprentice* #'describe)
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
 (defvar *Buffer-context* nil
