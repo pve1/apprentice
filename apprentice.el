@@ -15,6 +15,8 @@
 (define-key apprentice-mode-map [?	] 'apprentice-next-button) ; tab
 (define-key apprentice-mode-map
   (kbd "<backtab>") 'apprentice-previous-button) ; s-tab
+(define-key apprentice-mode-map
+  (kbd "C-<return>") 'apprentice-activate-button-then-next)
 
 (defvar apprentice-polling-frequency 0.5)
 (defvar apprentice-buffer-name "*apprentice*")
@@ -28,13 +30,16 @@
 (defvar apprentice-inhibit-update-p nil)
 
 ;; Valid members are:
-;; - toplevel-form
-;; - enclosing-form
+;; - point
+;; - column
+;; - line
 ;; - package
 ;; - filename
-;; - point
-;; - line
+;; - locked
 ;; - max-line
+;; - enclosing-form
+;; - toplevel-form
+
 (defvar apprentice-provide-context '())
 
 (defvar-local apprentice-input nil)
@@ -48,7 +53,7 @@
 (defvar-local apprentice-ephemeral-functions nil)
 
 (defvar apprentice-help-line
-  (let ((s " [q]:quit [l|L]:lock [-|+]:freq [m]:mode ")
+  (let ((s " [q]:quit [l|L]:lock [-|+]:freq [e]:eagr [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'face 'default 'font-lock-face 'default))
@@ -124,6 +129,24 @@
     (put-text-property (1+ begin) (1+ end) 'face face)
     (put-text-property (1+ begin) (1+ end) 'font-lock-face face)))
 
+(defun apprentice-indent-region-using-temp-buffer (b e)
+  (interactive "r")
+  (let* ((text (buffer-substring b e))
+         (formatted (with-temp-buffer
+                      (delay-mode-hooks (lisp-mode))
+                      (font-lock-mode 1)
+                      (insert text)
+                      (font-lock-fontify-buffer)
+                      (indent-region 1 (point-max))
+                      (buffer-string))))
+    (delete-region b e)
+    (goto-char b)
+    (insert formatted)))
+
+(defun apprentice-indent-region (property)
+  (cl-destructuring-bind (tag begin end) property
+    (apprentice-indent-region-using-temp-buffer begin end)))
+
 (defun apprentice-elisp-ephemeral-callback (function-name
                                             arguments
                                             buf
@@ -147,6 +170,32 @@
       (when button-order
         (apprentice-jump-to-nth-button button-order)))))
 
+(defun apprentice-activate-elisp-button ()
+  (interactive)
+  (let ((prop (get-text-property
+               (point)
+               'apprentice-button-properties))
+        (additional (get-text-property
+                     (point)
+                     'apprentice-button-additional-properties)))
+    (when prop
+      (cl-destructuring-bind (tag begin end label when-clicked-form
+                                  &key face redisplay name
+                                  arguments &allow-other-keys)
+          prop
+        (if name
+            (apprentice-elisp-ephemeral-callback
+             name
+             arguments
+             (cl-getf additional 'buf)
+             redisplay
+             (cl-getf additional 'button-order))
+          (apprentice-elisp-callback
+             when-clicked-form
+             (cl-getf additional 'buf)
+             redisplay
+             (cl-getf additional 'button-order)))))))
+
 (defun apprentice-insert-elisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
                               &key face redisplay name
@@ -157,22 +206,9 @@
           (buf (current-buffer))) ; apprentice buffer
       (if name
           (define-key keymap (kbd "RET")
-            (lambda ()
-              (interactive)
-              (apprentice-elisp-ephemeral-callback
-               name
-               arguments
-               buf
-               redisplay
-               button-order)))
+            'apprentice-activate-elisp-button)
         (define-key keymap (kbd "RET")
-          (lambda ()
-            (interactive)
-            (apprentice-elisp-callback
-             when-clicked-form
-             buf
-             redisplay
-             button-order))))
+          'apprentice-activate-elisp-button))
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
       (unless (eq :unspecified face)
@@ -182,7 +218,55 @@
                              'face)
                            face))
       (put-text-property (1+ begin) (1+ end)
-                         'apprentice-button t))))
+                         'apprentice-button t)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-type 'elisp)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-properties
+                         prop)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-additional-properties
+                         (list 'button-order button-order
+                               'current-buffer buf)))))
+
+(defun apprentice-activate-button-then-next ()
+  (interactive)
+  (let ((type (get-text-property (point) 'apprentice-button-type))
+        (buf (current-buffer)))
+    (cl-case type
+      (elisp (apprentice-activate-elisp-button))
+      (lisp (apprentice-activate-lisp-button)))
+    (unless (eq (current-buffer) buf)
+      (insert "\n\n"))
+    (select-window (get-buffer-window buf))
+    (apprentice-next-button)))
+
+(defun apprentice-activate-lisp-button ()
+  (interactive)
+  (let ((prop (get-text-property
+               (point)
+               'apprentice-button-properties))
+        (additional (get-text-property
+                     (point)
+                     'apprentice-button-additional-properties)))
+    (when prop
+      (cl-destructuring-bind (tag begin end label when-clicked-form
+                                  &key face redisplay name
+                                  arguments &allow-other-keys)
+          prop
+        (message "%S" when-clicked-form)
+        (if (stringp when-clicked-form)
+            (slime-eval (progn `(cl:eval
+                                 (cl:read-from-string
+                                  ,when-clicked-form))
+                               t)) ; may otherwise return unreadable objects
+          (slime-eval when-clicked-form))
+        (when redisplay
+          (apprentice-update-apprentice-buffer
+           (cl-getf additional 'buf))
+          (when (cl-getf additional 'button-order)
+            (apprentice-jump-to-nth-button
+             (cl-getf additional 'button-order))))))))
 
 (defun apprentice-insert-lisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
@@ -191,22 +275,9 @@
       prop
     (setf face (or face 'font-lock-keyword-face))
     (let ((keymap (make-sparse-keymap))
-          (buf (current-buffer))) ; apprentice buffer
+          (buf (current-buffer)))       ; apprentice buffer
       (define-key keymap (kbd "RET")
-        (lambda ()
-          (interactive)
-          (message "%S" when-clicked-form)
-          (if (stringp when-clicked-form)
-              (slime-eval (progn `(cl:eval
-                                   (cl:read-from-string
-                                    ,when-clicked-form))
-                                 t)) ; may otherwise return unreadable
-                                        ; objects
-            (slime-eval when-clicked-form))
-          (when redisplay
-            (apprentice-update-apprentice-buffer buf)
-            (when button-order
-              (apprentice-jump-to-nth-button button-order)))))
+        'apprentice-activate-lisp-button)
       ;; Begin and end are zero-based, so we add one.
       (put-text-property (1+ begin) (1+ end) 'keymap keymap)
       (unless (eq :unspecified face)
@@ -216,7 +287,16 @@
                              'face)
                            face))
       (put-text-property (1+ begin) (1+ end)
-                         'apprentice-button t))))
+                         'apprentice-button t)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-type 'lisp)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-properties
+                         prop)
+      (put-text-property (1+ begin) (1+ end)
+                         'apprentice-button-additional-properties
+                         (list 'button-order button-order
+                               'current-buffer buf)))))
 
 (defun apprentice-insert-help-line ()
   (if apprentice-locked-p
@@ -261,6 +341,8 @@
               prop (cl-decf button-count)))
             (apprentice::fontify-region
              (apprentice-fontify-lisp-region prop))
+            (apprentice::indent-region
+             (apprentice-indent-region prop))
             (apprentice::add-face
              (apprentice-add-face prop))
             (apprentice::ephemeral-function
@@ -490,6 +572,54 @@
                     (apprentice-create-apprentice-buffer))))
     (apprentice-update-apprentice-buffer buffer input)))
 
+;;; Examining source code
+
+(defun apprentice-at-toplevel-p ()
+  (save-excursion
+    (let ((top t))
+      (ignore-errors (up-list -1)
+                     (setf top nil))
+      top)))
+
+(defun apprentice-goto-toplevel ()
+  (ignore-errors
+    (while (not (apprentice-at-toplevel-p))
+      (up-list -1)))
+  (unless (zerop (current-column))
+    (backward-sexp)))
+
+(defun apprentice-toplevel-form-name ()
+  (save-excursion
+    (ignore-errors
+      (progn
+        (apprentice-goto-toplevel)
+        (down-list)
+        (forward-sexp 2)
+        (thing-at-point 'symbol t)))))
+
+(defun apprentice-car-of-list ()
+  (when (looking-at "( *\\_<") ; list with symbol at car
+    (save-excursion
+      (search-forward-regexp "\\_<")
+      (thing-at-point 'symbol t))))
+
+(defun apprentice-surrounding-sexp-car ()
+  (save-excursion
+    (ignore-errors
+      (up-list -1)
+      (when (looking-at "( *\\_<") ; list with symbol at car
+        (search-forward-regexp "\\_<")
+        (thing-at-point 'symbol t)))))
+
+(defun apprentice-current-form-path ()
+  (let* (path)
+    (save-excursion
+      (ignore-errors
+        (while (not (zerop (current-column)))
+          (up-list -1)
+          (push (apprentice-car-of-list) path))))
+    path))
+
 (defun apprentice-enclosing-form-position ()
   (condition-case nil
       (save-excursion
@@ -546,7 +676,9 @@
       ,@(when (member 'package apprentice-provide-context)
           (list :package (apprentice-package)))
       ,@(when (member 'filename apprentice-provide-context)
-          (list :filename (buffer-file-name))))))
+          (list :filename (buffer-file-name)))
+      ,@(when (member 'locked apprentice-provide-context)
+          (list :locked apprentice-locked-p)))))
 
 (defun apprentice-determine-input-at-point ()
   (cl-block determine-input
@@ -608,7 +740,11 @@
           ((and (or (eql major-mode 'lisp-mode)
                     (eql major-mode 'slime-repl-mode))
                 (get-buffer apprentice-buffer-name))
-           (apprentice-set-input-from-point-maybe)
+           (unless (with-current-buffer (get-buffer
+                                         apprentice-buffer-name)
+                     (and apprentice-input
+                          (eq 'form (car apprentice-input))))
+             (apprentice-set-input-from-point-maybe))
            (walk-windows #'apprentice-update-if-live-window
                          nil t)))))
 
