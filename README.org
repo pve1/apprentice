@@ -1,10 +1,11 @@
 
-* Slime Apprentice
+* Apprentice mode
 
-- Load or byte compile ~slime-apprentice.el~ in Emacs.
-- Load the ~slime-apprentice~ system in Lisp.
+- Load ~apprentice.el~ in Emacs.
+- Load the ~apprentice~ system in Lisp.
+- Set ~apprentice:*apprentice*~ to something suitable.
 
 Then, in a lisp buffer do:
 
-~M-x slime-apprentice-describe~
+~M-x apprentice-describe~
 
