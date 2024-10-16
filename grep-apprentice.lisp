@@ -5,6 +5,8 @@
 
 ;;;; Grep apprentice
 
+;;; Note: Symlinked directories confuse [REPLACE].
+
 (in-package :apprentice) cx
 
 (defclass Grep-apprentice (caching-apprentice)
