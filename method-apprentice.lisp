@@ -62,7 +62,6 @@
                        `(progn
                           (method-apprentice-remove-method
                            (second (assoc ,i *method-apprentice-methods*)))
-                          (setf *method-apprentice-methods* nil)
                           (method-apprentice-dim-current-line)))
                       (terpri))))
         t))))
