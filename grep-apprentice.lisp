@@ -87,7 +87,7 @@
           (string (symbol-name object))
           (buffer-context-filename
             (let ((f (getf *buffer-context* :filename)))
-              (when f
+              (when (and f (probe-file f))
                 (truename f))))
           (results)
           (offset *standard-output*))
