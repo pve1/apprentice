@@ -145,7 +145,7 @@
               (put-lisp-button-here
                ap
                "[FILE]"
-               '(setf (file-selection-mode *callback-apprentice*)
+               '(setf (file-selection-mode *button-apprentice*)
                  :file)
                :stream result
                :offset offset
@@ -154,7 +154,7 @@
               (put-lisp-button-here
                ap
                "[DIR]"
-               '(setf (file-selection-mode *callback-apprentice*)
+               '(setf (file-selection-mode *button-apprentice*)
                  :directory)
                :stream result
                :offset offset
@@ -163,8 +163,8 @@
               (put-lisp-button-here
                ap
                "[SORT]"
-               '(setf (sort-lines-p *callback-apprentice*)
-                 (not (sort-lines-p *callback-apprentice*)))
+               '(setf (sort-lines-p *button-apprentice*)
+                 (not (sort-lines-p *button-apprentice*)))
                :stream result
                :offset offset
                :redisplay t)

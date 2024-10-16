@@ -6,7 +6,7 @@
 
 (defvar *button-callbacks* (make-hash-table))
 (defvar *button-callback-id-counter* 0)
-(defvar *callback-apprentice* nil)
+(defvar *button-apprentice* nil)
 
 (defun initialize-button-callbacks ()
   (setf *button-callback-id-counter* 0)
@@ -38,15 +38,15 @@
 
 ;; apprentice is the one that created the button
 (defmethod eval-button-callback-2 (apprentice (callback list))
-  (let ((*callback-apprentice* apprentice))
+  (let ((*button-apprentice* apprentice))
     (eval callback)))
 
 (defmethod eval-button-callback-2 (apprentice (callback symbol))
-  (let ((*callback-apprentice* apprentice))
+  (let ((*button-apprentice* apprentice))
     (funcall callback apprentice)))
 
 (defmethod eval-button-callback-2 (apprentice (callback function))
-  (let ((*callback-apprentice* apprentice))
+  (let ((*button-apprentice* apprentice))
     (funcall callback apprentice)))
 
 (defmethod put-button-here (apprentice button-type label when-clicked
