@@ -7,6 +7,8 @@
 (cl-interpol:enable-interpol-syntax)
 (in-package :apprentice) cx
 
+(defvar *debug-suggestions* nil)
+
 (defclass Suggest-apprentice ()
   ())
 
@@ -43,13 +45,13 @@
           (progn
            (beginning-of-thing 'sexp)
            (kill-sexp))))
+     (let ((begin (point)))
      (insert suggestion-string)
-     (when post-insert-form
-       (eval (car (read-from-string
-                   post-insert-form))))
-     (save-excursion
-      (backward-sexp)
-      (indent-sexp)))))
+       (let ((end (point)))
+         (when post-insert-form
+           (eval (car (read-from-string
+                       post-insert-form))))
+         (indent-region begin end))))))
 
 (defmethod describe-with-apprentice ((ap suggest-apprentice)
                                      object
@@ -64,7 +66,12 @@
                                             path
                                             "toplevel"))
       (terpri)
+      (when *debug-suggestions*
+        (format *debug-io* "~&################################~%"))
       (dolist (suggestion suggestions)
+        (when *debug-suggestions*
+          (format *debug-io* "~&~A~%--------------------------------"
+                  (suggestion-string suggestion)))
         (put-elisp-button-here
          ap (suggestion-string suggestion) nil
          :name 'insert-toplevel-suggestion
@@ -193,8 +200,13 @@
    (string-trim '(#\space)
                 (chomp-left-right string))))
 
+(defun format-suggestion-chomp-trim-right (string)
+  (normalize-indentation
+   (string-right-trim '(#\space)
+                      (chomp-left-right string))))
+
 (defun format-suggestion (string)
-  (format-suggestion-chomp-trim string))
+  (format-suggestion-chomp-trim-right string))
 
 (defgeneric generate-suggestions (ap object path)
   (:method (ap object path)
@@ -236,7 +248,7 @@
           ;; This form and the next messes with slime's package
           ;; detection unless the ${""} is added before the
           ;; in-package.
-          (suggest #?(
+          (suggest #?{
                       (defpackage #:${name}
                         (:use #:cl)
                         (:local-nicknames)
@@ -244,7 +256,7 @@
                         (:export))
 
                       ${""}(in-package #:${name})
-                      ))
+                      })
           ;; Make package
           (suggest #?{
                    (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -286,11 +298,9 @@
                    (loop :for slot :in slot-strings
                          :collect (format nil ":~A ~A"
                                           slot slot))))
-            (suggest #?{
-                     (defun ${name} ${slot-strings}
-                       (make-instance '${name}
-                         @{kw-slot-pairs}))
-                     }))))
+            (suggest #?{(defun ${name} ${slot-strings}
+                          (make-instance '${name}
+                            @{kw-slot-pairs}))}))))
       ;; Accessors
       (when (and (<= 2 (length path))
                  (path-starts-with '("defclass")))
@@ -325,15 +335,13 @@
                               acc)))
                   accessors))
                (cl-interpol:*list-delimiter* #?"\n"))
-          (suggest #?{
-                   (@{forms})})))
+          (suggest #?{(@{forms})})))
       ;; With-slots
       (when (and (find-class object nil)
                  (path-ends-with '("with-slots")))
         (let* ((slots (suggest-get-class-slots ap object))
                (forms (mapcar #'string-downcase slots)))
-          (suggest #?{
-                   (@{forms})})))
+          (suggest #?{(@{forms})})))
       ;; Suggest
       (when (path-ends-with '("suggest"))
         (suggest #?|
@@ -405,6 +413,5 @@
                                        :accessor ${string}
                                        :initform nil)})))
              (cl-interpol:*list-delimiter* #?"\n"))
-          (suggest #?{
-                   (@{slot-definitions})})))
+          (suggest #?{(@{slot-definitions})})))
       (nreverse suggestions))))
