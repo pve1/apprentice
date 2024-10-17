@@ -8,6 +8,27 @@
 (defclass Describe-apprentice ()
   ())
 
+(defun describe-toggle-variable (symbol)
+  (let* ((nothing (load-time-value '#:nothing))
+         (other-value (get symbol
+                           'describe-apprentice-toggle-value
+                           nothing)))
+    (if (eq other-value nothing)
+        (setf (symbol-value symbol)
+              (not (symbol-value symbol)))
+        (let ((current (symbol-value symbol)))
+          (setf (symbol-value symbol) other-value
+                (get symbol 'describe-apprentice-toggle-value)
+                current)))
+    t))
+
+(defun describe-apprentice-has-toggle-p (symbol)
+  (let* ((nothing (load-time-value '#:nothing))
+         (other-value (get symbol
+                           'describe-apprentice-toggle-value
+                           nothing)))
+    (not (eq other-value nothing))))
+
 (defmethod describe-with-apprentice ((ap describe-apprentice)
                                      object
                                      stream)
@@ -66,12 +87,12 @@
                               `(makunbound ',object)
                               :stream stream
                               :redisplay t)
-        (when (member (symbol-value object) '(t nil))
+        (when (or (member (symbol-value object) '(t nil))
+                  (describe-apprentice-has-toggle-p object))
           (space)
           (put-lisp-button-here ap
                                 "[TOGGLE]"
-                                `(setf (symbol-value ',object)
-                                       (not (symbol-value ',object)))
+                                `(describe-toggle-variable ',object)
                                 :stream stream
                                 :redisplay t)))
       ;; Fmakunbound
