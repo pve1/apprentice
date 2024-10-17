@@ -195,6 +195,11 @@
 (defun format-suggestion (string)
   (format-suggestion-chomp-trim string))
 
+(defgeneric generate-suggestions (ap object path)
+  (:method (ap object path)
+    nil)
+  (:documentation ""))
+
 ;; Hardcode suggestions for now.
 (defmethod generate-suggestions (ap (object symbol) path)
   (let ((suggestions ())
@@ -354,10 +359,6 @@
                       (apprentice-goto-toplevel)
                       (beginning-of-line)))))
       (nreverse suggestions))))
-
-(defmethod generate-suggestions (ap (object looking-at-character)
-                                                       path)
-  nil)
 
 ;; Quick 'n' dirty copy-paste from symbol method.
 (defmethod generate-suggestions (ap (object looking-at-character)
