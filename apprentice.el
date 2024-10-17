@@ -555,7 +555,9 @@
     (when apprentice-input
       (let ((results (apprentice-retrieve-description-for-buffer)))
         ;; (message "%S" results)
-        (cond ((eql results :unchanged)
+        (cond ((null results)
+               nil)
+              ((eql results :unchanged)
                nil)
               ((eql results :max-size-exceeded)
                (erase-buffer)
