@@ -236,8 +236,11 @@
     (cl-case type
       (elisp (apprentice-activate-elisp-button))
       (lisp (apprentice-activate-lisp-button)))
+    ;; Hack: This function is only used for suggestions, and the
+    ;; results look prettier if we add a newline between each
+    ;; suggestion. Ideally this should be handled elsewhere.
     (unless (eq (current-buffer) buf)
-      (insert "\n\n"))
+      (insert "\n"))
     (select-window (get-buffer-window buf))
     (apprentice-next-button)))
 
