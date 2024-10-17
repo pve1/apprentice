@@ -62,17 +62,14 @@
                        :accessor ignore-line-regexp
                        :initform "^ *$|^;|^\\(in-package")))
 
-;; Singleton
-;; (defvar *toplevel-apprentice* nil)
-
 (defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
-  ;; (setf *toplevel-apprentice* w)
   (when (stringp ignore-line-regexp)
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
 
-;; Hack
+;; Note: Replace won't work on files that haven't been opened by
+;; emacs.
 (defmethod apprentice-update ((ap wide-toplevel-apprentice)
                               object)
   (let ((offset (file-position *standard-output*))
@@ -85,6 +82,7 @@
          (goto-line line-number
                     (find-file-other-window
                      file))
+         (recenter-top-bottom 1)
          (if current-window
              (select-window current-window)
              (other-window 1)))))
