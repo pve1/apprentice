@@ -183,18 +183,21 @@
                                   &key face redisplay name
                                   arguments &allow-other-keys)
           prop
-        (if name
-            (apprentice-elisp-ephemeral-callback
-             name
-             arguments
-             (cl-getf additional 'buf)
-             redisplay
-             (cl-getf additional 'button-order))
-          (apprentice-elisp-callback
-             when-clicked-form
-             (cl-getf additional 'buf)
-             redisplay
-             (cl-getf additional 'button-order)))))))
+        (condition-case-unless-debug error
+            (if name
+                (apprentice-elisp-ephemeral-callback
+                 name
+                 arguments
+                 (cl-getf additional 'buf)
+                 redisplay
+                 (cl-getf additional 'button-order))
+              (apprentice-elisp-callback
+               when-clicked-form
+               (cl-getf additional 'buf)
+               redisplay
+               (cl-getf additional 'button-order)))
+          (error (apprentice-cancel-timer)
+                 (message "%s" error)))))))
 
 (defun apprentice-insert-elisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
@@ -258,12 +261,16 @@
                                   arguments &allow-other-keys)
           prop
         (message "%S" when-clicked-form)
-        (if (stringp when-clicked-form)
-            (slime-eval (progn `(cl:eval
-                                 (cl:read-from-string
-                                  ,when-clicked-form))
-                               t)) ; may otherwise return unreadable objects
-          (slime-eval when-clicked-form))
+        (condition-case-unless-debug error
+            (progn
+              (if (stringp when-clicked-form)
+                  (slime-eval (progn `(cl:eval
+                                       (cl:read-from-string
+                                        ,when-clicked-form))
+                                     t)) ; may otherwise return unreadable objects
+                (slime-eval when-clicked-form)))
+          (error (apprentice-cancel-timer)
+                 (message "%s" error)))
         (when redisplay
           (apprentice-update-apprentice-buffer
            (cl-getf additional 'buf))
@@ -533,7 +540,6 @@
                     (cl:quote ,context)))
                   ,eval-form))
       (error (apprentice-cancel-timer)
-             (setf apprentice-describe-timer nil)
              (message "Error retrieving description. Are we consing yet?")
              nil))))
 
@@ -788,7 +794,8 @@
 
 (defun apprentice-cancel-timer ()
   (interactive)
-  (cancel-timer apprentice-describe-timer))
+  (cancel-timer apprentice-describe-timer)
+  (setf apprentice-describe-timer nil))
 
 (defun apprentice-input-property (property-name)
   (cl-getf (cdr apprentice-input) property-name))
