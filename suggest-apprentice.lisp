@@ -7,25 +7,46 @@
 (cl-interpol:enable-interpol-syntax)
 (in-package :apprentice) cx
 
-(defclass Suggest-apprentice (caching-apprentice)
-  ((busy-result :initarg :busy-result
-                :accessor busy-result
-                :initform nil)
-   (suggestion-table :initarg :suggestion-table
-                     :accessor suggestion-table
-                     :initform (make-hash-table :test 'equal))))
+(defclass Suggest-apprentice ()
+  ())
+
+(defclass suggestion ()
+  ((string :initarg :string
+           :accessor suggestion-string
+           :initform nil)
+   (pre-insert-elisp-form
+    :initarg :pre-insert-elisp-form
+    :accessor pre-insert-elisp-form
+    :initform nil)
+   (post-insert-elisp-form
+    :initarg :post-insert-elisp-form
+    :accessor post-insert-elisp-form
+    :initform nil))
+  (:documentation ""))
+
+(defmethod suggestion-string ((s string))
+  s)
 
 (defmethod suggest-prepare-elisp-functions (apprentice)
   (create-ephemeral-elisp-function
    apprentice 'insert-toplevel-suggestion
-   '(lambda (file suggestion-string)
+   '(lambda (file
+             suggestion-string
+             pre-insert-form
+             post-insert-form)
      (switch-to-buffer-other-window
       (get-file-buffer file))
-     (ignore-errors
-      (progn
-        (beginning-of-thing 'sexp)
-        (kill-sexp)))
+     (if pre-insert-form
+         (eval (car (read-from-string
+                     pre-insert-form)))
+         (ignore-errors
+          (progn
+           (beginning-of-thing 'sexp)
+           (kill-sexp))))
      (insert suggestion-string)
+     (when post-insert-form
+       (eval (car (read-from-string
+                   post-insert-form))))
      (save-excursion
       (backward-sexp)
       (indent-sexp)))))
@@ -45,10 +66,24 @@
       (terpri)
       (dolist (suggestion suggestions)
         (put-elisp-button-here
-         ap suggestion nil
+         ap (suggestion-string suggestion) nil
          :name 'insert-toplevel-suggestion
          :arguments (list (getf *buffer-context* :filename)
-                          suggestion)
+                          (suggestion-string suggestion)
+                          (etypecase suggestion
+                            (string nil)
+                            (suggestion
+                             (alexandria:when-let
+                                 ((pre (pre-insert-elisp-form
+                                        suggestion)))
+                               (swank::process-form-for-emacs pre))))
+                          (etypecase suggestion
+                            (string nil)
+                            (suggestion
+                             (alexandria:when-let
+                                 ((post (post-insert-elisp-form
+                                         suggestion)))
+                               (swank::process-form-for-emacs post)))))
          :face :unspecified)
         (terpri)
         (terpri))
@@ -97,7 +132,8 @@
 
 ;; Hack
 (defun normalize-indentation (string)
-  (let ((indentation nil))
+  (let ((indentation nil)
+        (lines 0))
     (labels ((empty-line-p (line)
                (loop :for c :across line
                      :always (eql c #\Space)))
@@ -111,21 +147,53 @@
       (with-input-from-string (s string)
         (setf indentation
               (loop :for line = (read-line s nil s)
+                    :for i :from 0
                     :until (eq s line)
-                    :minimize (measure-indentation line)))
+                    :minimize (measure-indentation line)
+                    :finally (setf lines i)))
         (file-position s 0)
         (with-output-to-string (out)
-          (loop :for line = (read-line s nil s)
+          (loop :with missing-newline
+                :for line = (multiple-value-bind (line missing)
+                                (read-line s nil s)
+                              (setf missing-newline missing)
+                              line)
+                :for i :from 0
                 :until (eq s line)
-                :do (write-sequence line out
-                                    :start (if (empty-line-p line)
-                                               0
-                                               indentation))
-                    (terpri out)))))))
+                :do (unless (empty-line-p line)
+                      (write-sequence
+                       line out :start indentation))
+                    (unless (and (eq s (peek-char nil s nil s))
+                                 missing-newline)
+                      (terpri out))))))))
+
+(defun chomp-left (string)
+  (if (and (not (alexandria:emptyp string))
+           (eql #\Newline (alexandria:first-elt string)))
+      (subseq string 1)
+      string))
+
+(defun chomp-right (string)
+  (if (and (not (alexandria:emptyp string))
+           (eql #\Newline (alexandria:last-elt string)))
+      (subseq string 0 (1- (length string)))
+      string))
+
+(defun chomp-left-right (string)
+  (chomp-right (chomp-left string)))
+
+(defun format-suggestion-trim-chomp (string)
+  (normalize-indentation
+   (chomp-left-right
+    (string-trim '(#\space) string))))
+
+(defun format-suggestion-chomp-trim (string)
+  (normalize-indentation
+   (string-trim '(#\space)
+                (chomp-left-right string))))
 
 (defun format-suggestion (string)
-  (string-trim '(#\newline #\space)
-               (normalize-indentation string)))
+  (format-suggestion-chomp-trim string))
 
 ;; Hardcode suggestions for now.
 (defmethod generate-suggestions (ap (object symbol) path)
@@ -133,8 +201,15 @@
         (name (string-downcase (symbol-name object)))
         (line (getf *buffer-context* :line))
         (toplevel-name))
-    (flet ((suggest (x)
-             (push (format-suggestion x)
+    (flet ((suggest (x &key pre-insert-elisp-form
+                            post-insert-elisp-form)
+             (push (if (or pre-insert-elisp-form
+                           post-insert-elisp-form)
+                       (make-instance 'suggestion
+                         :string (format-suggestion x)
+                         :pre-insert-elisp-form pre-insert-elisp-form
+                         :post-insert-elisp-form post-insert-elisp-form)
+                       (format-suggestion x))
                    suggestions))
            (toplevel-name ()
              (or toplevel-name
@@ -155,15 +230,15 @@
           ;; This form and the next messes with slime's package
           ;; detection unless the ${""} is added before the
           ;; in-package.
-          (suggest #?{
-                   (defpackage #:${name}
-                     (:use #:cl)
-                     (:local-nicknames)
-                     ;; (:import-from)
-                     (:export))
+          (suggest #?(
+                      (defpackage #:${name}
+                        (:use #:cl)
+                        (:local-nicknames)
+                        ;; (:import-from)
+                        (:export))
 
-                   ${""}(in-package #:${name})
-                   })
+                      ${""}(in-package #:${name})
+                      ))
           ;; Make package
           (suggest #?{
                    (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -216,18 +291,15 @@
         (suggest #?{
                  (${name} :initarg :${name}
                           :accessor ${name}
-                          :initform nil)
-                 })
+                          :initform nil)})
         (suggest #?{
                  (${name} :initarg :${name}
                           :accessor ${(toplevel-name)}-${name}
-                          :initform nil)
-                 })
+                          :initform nil)})
         (suggest #?{
                  (${name} :initarg :${name}
                           :accessor ${name}-of
-                          :initform nil)
-                 }))
+                          :initform nil)}))
       ;; With-accessors
       (when (and (find-class object nil)
                  (path-ends-with '("with-accessors")))
@@ -248,16 +320,14 @@
                   accessors))
                (cl-interpol:*list-delimiter* #?"\n"))
           (suggest #?{
-                   (@{forms})
-                   })))
+                   (@{forms})})))
       ;; With-slots
       (when (and (find-class object nil)
                  (path-ends-with '("with-slots")))
         (let* ((slots (suggest-get-class-slots ap object))
                (forms (mapcar #'string-downcase slots)))
           (suggest #?{
-                   (@{forms})
-                   })))
+                   (@{forms})})))
       ;; Suggest
       (when (path-ends-with '("suggest"))
         (suggest #?|
@@ -265,10 +335,28 @@
 
                           })
                  |))
+      ;; Defgeneric from defmethod, point at function name
+      (when (and (equal '("defmethod") path)
+                 (fboundp object)
+                 (typep (fdefinition object)
+                        'generic-function))
+        (let ((lambda-list
+                (mapcar #'string-downcase
+                        (closer-mop:generic-function-lambda-list
+                         (fdefinition object)))))
+          (suggest #?{
+                   (defgeneric ${name} ${lambda-list}
+                     (:documentation ""))
+
+                   }
+                   :pre-insert-elisp-form
+                   `(progn
+                      (apprentice-goto-toplevel)
+                      (beginning-of-line)))))
       (nreverse suggestions))))
 
 (defmethod generate-suggestions (ap (object looking-at-character)
-                                 path)
+                                                       path)
   nil)
 
 ;; Quick 'n' dirty copy-paste from symbol method.
@@ -316,6 +404,5 @@
                                        :initform nil)})))
              (cl-interpol:*list-delimiter* #?"\n"))
           (suggest #?{
-                   (@{slot-definitions})
-                   })))
+                   (@{slot-definitions})})))
       (nreverse suggestions))))
