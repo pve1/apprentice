@@ -52,6 +52,9 @@
 (defmethod apprentice-cache-results (object input result)
   (setf (last-result object) result))
 
+(defgeneric Apprentice-update (object input)
+  (:documentation ""))
+
 (defmethod apprentice-update (object input)
   "")
 
