@@ -65,7 +65,15 @@
                               "[MAKUNBOUND]"
                               `(makunbound ',object)
                               :stream stream
-                              :redisplay t))
+                              :redisplay t)
+        (when (member (symbol-value object) '(t nil))
+          (space)
+          (put-lisp-button-here ap
+                                "[TOGGLE]"
+                                `(setf (symbol-value ',object)
+                                       (not (symbol-value ',object)))
+                                :stream stream
+                                :redisplay t)))
       ;; Fmakunbound
       (when (fboundp object)
         (space)
