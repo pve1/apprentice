@@ -89,7 +89,8 @@
         (terpri))
       (alexandria:appendf
        *description-properties*
-       `((indent-region ,begin ,(+ begin (file-position stream))))))))
+       `((indent-region ,begin ,(file-position stream))))
+      t)))
 
 ;;; Helpers
 (defmethod suggest-get-class-accessors (ap (class-name symbol)
