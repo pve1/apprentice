@@ -267,6 +267,11 @@
 
                    (export '())
                    }))
+        ;; Eval-when
+        (when (and (null path)
+                   (eq 'eval-when object))
+          (suggest #?{(eval-when (:compile-toplevel :load-toplevel :execute)
+                        )}))
         ;; Defclass
         (unless (find-class object nil)
           (suggest #?{
@@ -367,6 +372,23 @@
                    `(progn
                       (apprentice-goto-toplevel)
                       (beginning-of-line)))))
+      ;; Declare ignore
+      (when (or (path-ends-with '("defmethod"))
+                (path-ends-with '("defun")))
+        (let ((downcased (string-downcase object)))
+          (suggest #?{(declare (ignore ${downcased}))})
+          ;; Declare type
+          (if (find-class object nil)
+              (suggest #?{(declare (type ${downcased} _))}
+                       :post-insert-elisp-form `(search-backward "_"))
+              (suggest #?{(declare (type _ ${downcased}))}
+                       :post-insert-elisp-form `(search-backward "_")))
+          ;; Check-type
+          (if (find-class object nil)
+              (suggest #?{(check-type ${downcased} _)}
+                       :post-insert-elisp-form `(search-backward "_"))
+              (suggest #?{(check-type _ ${downcased})}
+                       :post-insert-elisp-form `(search-backward "_")))))
       (nreverse suggestions))))
 
 ;; Quick 'n' dirty copy-paste from symbol method.
