@@ -2,6 +2,9 @@
 (define-derived-mode apprentice-mode text-mode
   "Slime apprentice")
 
+;; Suggested key for apprentice-describe.
+;; (define-key lisp-mode-map (kbd "C-c z") (quote apprentice-describe))
+
 (define-key apprentice-mode-map (kbd "q") 'kill-buffer-and-window)
 (define-key apprentice-mode-map (kbd "l") 'apprentice-lock-apprentice)
 (define-key apprentice-mode-map (kbd "L") 'apprentice-lock-apprentice-and-split)
@@ -32,6 +35,7 @@
 ;; Valid members are:
 ;; - point
 ;; - column
+;; - region
 ;; - line
 ;; - package
 ;; - filename
@@ -676,6 +680,11 @@
           (list :point (point)))
       ,@(when (member 'column apprentice-provide-context)
           (list :column (current-column)))
+      ,@(when (member 'region apprentice-provide-context)
+          (list :region (if (region-active-p)
+                            (list (region-beginning)
+                                  (region-end))
+                          nil)))
       ,@(when (member 'line apprentice-provide-context)
           (list :line (line-number-at-pos)))
       ,@(when (member 'max-line apprentice-provide-context)

@@ -9,7 +9,7 @@
 (defvar *Max-description-size* 100000)
 (defvar *Force-return-description* nil)
 (defvar *Buffer-context* nil
-  ":point :column :line :max-line :package :filename :locked")
+  ":point :column :region :line :max-line :package :filename :locked")
 (defvar *Description-stream* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
