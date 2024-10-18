@@ -16,6 +16,9 @@
   ((string :initarg :string
            :accessor suggestion-string
            :initform nil)
+   (label :initarg :label
+          :accessor suggestion-label
+          :initform nil)
    (pre-insert-elisp-form
     :initarg :pre-insert-elisp-form
     :accessor pre-insert-elisp-form
@@ -28,6 +31,9 @@
 
 (defmethod suggestion-string ((s string))
   s)
+
+(defmethod suggestion-label (object)
+  nil)
 
 (defmethod suggest-prepare-elisp-functions (apprentice)
   (create-ephemeral-elisp-function
@@ -46,7 +52,8 @@
            (beginning-of-thing 'sexp)
            (kill-sexp))))
      (let ((begin (point)))
-     (insert suggestion-string)
+       (when suggestion-string
+         (insert suggestion-string))
        (let ((end (point)))
          (when post-insert-form
            (eval (car (read-from-string
@@ -73,7 +80,9 @@
           (format *debug-io* "~&~A~%--------------------------------"
                   (suggestion-string suggestion)))
         (put-elisp-button-here
-         ap (suggestion-string suggestion) nil
+         ap (or (suggestion-label suggestion)
+                (suggestion-string suggestion))
+         nil
          :name 'insert-toplevel-suggestion
          :arguments (list (getf *buffer-context* :filename)
                           (suggestion-string suggestion)
@@ -91,9 +100,11 @@
                                  ((post (post-insert-elisp-form
                                          suggestion)))
                                (swank::process-form-for-emacs post)))))
-         :face :unspecified)
-        (terpri)
-        (terpri))
+         :face (when (suggestion-string suggestion)
+                 :unspecified))
+        (unless (alexandria:ends-with (suggestion-string suggestion)
+                                      #\newline)
+          (terpri)))
       (alexandria:appendf
        *description-properties*
        `((indent-region ,begin ,(file-position stream))))
@@ -410,6 +421,16 @@
            (path-ends-with (suffix)
              (alexandria:ends-with-subseq
               suffix path :test #'equal)))
+      ;; Monitor form
+      (when (getf *buffer-context* :region)
+        (push (make-instance 'suggestion
+                :label "[MONITOR FORM]"
+                :pre-insert-elisp-form '(progn)
+                :post-insert-elisp-form
+                '(progn
+                  (goto-char (region-end))
+                  (apprentice-describe-form)))
+              suggestions))
       ;; Accessors
       (when (and (equal path '("defclass"))
                  (eql #\) (preceding-char object)))
