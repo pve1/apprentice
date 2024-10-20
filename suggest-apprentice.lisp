@@ -225,10 +225,13 @@
 
 ;; Hardcode suggestions for now.
 (defmethod generate-suggestions (ap (object symbol) path)
-  (let ((suggestions ())
-        (name (string-downcase (symbol-name object)))
-        (line (getf *buffer-context* :line))
-        (toplevel-name))
+  (let* ((suggestions ())
+         (name (string-downcase (symbol-name object)))
+         (name-looks-like-special-variable
+           (and (alexandria:starts-with #\* name)
+                (alexandria:ends-with #\* name)))
+         (line (getf *buffer-context* :line))
+         (toplevel-name))
     (flet ((suggest (x &key pre-insert-elisp-form
                             post-insert-elisp-form)
              (push (if (or pre-insert-elisp-form
@@ -259,14 +262,14 @@
           ;; detection unless the ${""} is added before the
           ;; in-package.
           (suggest #?{
-                      (defpackage #:${name}
-                        (:use #:cl)
-                        (:local-nicknames)
-                        ;; (:import-from)
-                        (:export))
+                   (defpackage #:${name}
+                     (:use #:cl)
+                     (:local-nicknames)
+                     ;; (:import-from)
+                     (:export))
 
-                      ${""}(in-package #:${name})
-                      })
+                   ${""}(in-package #:${name})
+                   })
           ;; Make package
           (suggest #?{
                    (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -282,13 +285,20 @@
                    (eq 'eval-when object))
           (suggest #?{(eval-when (:compile-toplevel :load-toplevel :execute)
                         )}))
-        ;; Defclass
-        (unless (find-class object nil)
-          (suggest #?{
-                   (defclass ${name} ()
-                     ()
-                     (:documentation ""))
-                   }))
+        ;; Defmethod for existing gf
+        (when (and (fboundp object)
+                   (typep (fdefinition object) 'generic-function))
+          (let ((name (string-downcase object))
+                (lambda-list
+                  (mapcar #'string-downcase
+                          (closer-mop:generic-function-lambda-list
+                           (fdefinition object))))
+                (qualifiers (if (eq 'initialize-instance object)
+                                " :after"
+                                "")))
+            (suggest #?{
+                     (defmethod $(name)$(qualifiers) $(lambda-list)
+                       )})))
         (when (find-class object nil)
           ;; initialize-instance
           (suggest #?{
@@ -313,9 +323,38 @@
                    (loop :for slot :in slot-strings
                          :collect (format nil ":~A ~A"
                                           slot slot))))
-            (suggest #?{(defun ${name} ${slot-strings}
+            (suggest #?{(defun ${name} ${(or slot-strings "()")}
                           (make-instance '${name}
-                            @{kw-slot-pairs}))}))))
+                            @{kw-slot-pairs}))})))
+        ;; Toplevel definitions (not fboundp)
+        (when (and (not (fboundp object))
+                   (not name-looks-like-special-variable))
+          (let ()
+            ;; Defun
+            (suggest #?{
+                     (defun $(name) ()
+                       )})
+            ;; Defgeneric
+            (suggest #?{
+                     (defgeneric $(name) ()
+                       (:documentation ""))})
+            ;; Defmethod
+            (suggest #?{
+                     (defmethod $(name) ()
+                       )})))
+        ;; Defvar and defparameter
+        (when name-looks-like-special-variable
+          (suggest #?{
+                   (defvar $(name))})
+          (suggest #?{
+                   (defparameter $(name) nil)}))
+        ;; Defclass
+        (unless (or (find-class object nil)
+                    name-looks-like-special-variable)
+          (suggest #?{
+                   (defclass ${name} ()
+                     ()
+                     (:documentation ""))})))
       ;; Accessors
       (when (and (<= 2 (length path))
                  (path-starts-with '("defclass")))
