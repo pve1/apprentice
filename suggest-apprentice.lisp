@@ -34,7 +34,7 @@
 (defmethod suggestion-label (object)
   nil)
 
-(defmethod suggest-prepare-elisp-functions (apprentice)
+(defmethod apprentice-create-ephemerals (apprentice)
   (create-ephemeral-elisp-function
    apprentice 'insert-toplevel-suggestion
    '(lambda (file
@@ -67,7 +67,7 @@
          (begin (file-position stream))
          (*standard-output* stream))
     (when suggestions
-      (suggest-prepare-elisp-functions ap)
+      (apprentice-create-ephemerals ap)
       (format t "Suggestions for ~A:~%" (if path
                                             path
                                             "toplevel"))
@@ -111,7 +111,8 @@
 
 ;;; Helpers
 (defmethod suggest-get-class-accessors (ap (class-name symbol)
-                                        &key (package *package*))
+                                        &key (package (symbol-package
+                                                       class-name)))
   (let ((class (find-class class-name nil))
         (generic-functions))
     (when class
@@ -129,6 +130,23 @@
                   ;; Found accessor.
                   (push sym generic-functions)))
       generic-functions)))
+
+(defmethod suggest-with-accessors-spec (ap class-name)
+  (let ((accessors (suggest-get-class-accessors ap class-name))
+        (name (string-downcase class-name)))
+    (mapcar
+     (lambda (x)
+       (let* ((acc (string-downcase x))
+              (short (if (and (alexandria:starts-with-subseq
+                               name acc)
+                              (< (1+ (length name))
+                                 (length acc)))
+                         (subseq acc (1+ (length name)))
+                         acc)))
+         (format nil "(~A ~A)"
+                 short
+                 acc)))
+     accessors)))
 
 (defmethod suggest-get-class-slots (ap (class-name symbol))
   (let ((class (find-class class-name nil)))
@@ -355,6 +373,7 @@
                    (defclass ${name} ()
                      ()
                      (:documentation ""))})))
+      ;; Not toplevel
       ;; Accessors
       (when (and (<= 2 (length path))
                  (path-starts-with '("defclass")))
@@ -373,21 +392,7 @@
       ;; With-accessors
       (when (and (find-class object nil)
                  (path-ends-with '("with-accessors")))
-        (let* ((accessors (suggest-get-class-accessors ap object))
-               (forms
-                 (mapcar
-                  (lambda (x)
-                    (let* ((acc (string-downcase x))
-                           (short (if (and (alexandria:starts-with-subseq
-                                            name acc)
-                                           (< (1+ (length name))
-                                              (length acc)))
-                                      (subseq acc (1+ (length name)))
-                                      acc)))
-                      (format nil "(~A ~A)"
-                              short
-                              acc)))
-                  accessors))
+        (let* ((forms (suggest-with-accessors-spec ap object))
                (cl-interpol:*list-delimiter* #?"\n"))
           (suggest #?{(@{forms})})))
       ;; With-slots
@@ -421,10 +426,10 @@
                    `(progn
                       (apprentice-goto-toplevel)
                       (beginning-of-line)))))
-      ;; Declare ignore
       (when (or (path-ends-with '("defmethod"))
                 (path-ends-with '("defun")))
         (let ((downcased (string-downcase object)))
+          ;; Declare ignore
           (suggest #?{(declare (ignore ${downcased}))})
           ;; Declare type
           (if (find-class object nil)
@@ -437,7 +442,15 @@
               (suggest #?{(check-type ${downcased} _)}
                        :post-insert-elisp-form `(search-backward "_"))
               (suggest #?{(check-type _ ${downcased})}
-                       :post-insert-elisp-form `(search-backward "_")))))
+                       :post-insert-elisp-form `(search-backward "_"))))
+        (alexandria:when-let*
+            ((class (find-class object nil))
+             (type (typep class 'standard-class))
+             (accessors (suggest-with-accessors-spec ap object))
+             (cl-interpol:*list-delimiter* #?"\n"))
+          (suggest #?{
+                   (with-accessors (@(accessors))
+                     )})))
       (nreverse suggestions))))
 
 ;; Quick 'n' dirty copy-paste from symbol method.
