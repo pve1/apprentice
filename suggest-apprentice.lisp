@@ -1,5 +1,4 @@
 ;;;; Requires
-;;;;   cl-ppcre
 ;;;;   cl-interpol
 ;;;;   "apprentice"
 ;;;;   "buttons"
