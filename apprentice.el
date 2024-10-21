@@ -167,7 +167,7 @@
                                   redisplay
                                   button-order)
   (let ((form (car (read-from-string when-clicked-form))))
-    (message "%S" form)
+    ;; (message "%S" form)
     (eval form)
     (when redisplay
       (apprentice-update-apprentice-buffer buf)
@@ -264,7 +264,7 @@
                                   &key face redisplay name
                                   arguments &allow-other-keys)
           prop
-        (message "%S" when-clicked-form)
+        ;; (message "%S" when-clicked-form)
         (condition-case-unless-debug error
             (progn
               (if (stringp when-clicked-form)
