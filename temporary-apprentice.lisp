@@ -26,7 +26,7 @@
       (setf *apprentice* (original-apprentice ap)))))
 
 (defun set-temporary-apprentice (apprentice &optional describe-function)
-  (when (symbolp apprentice)
+  (when (and apprentice (symbolp apprentice))
     (setf apprentice (make-instance apprentice)))
   (setf *apprentice*
         (make-instance 'temporary-apprentice
