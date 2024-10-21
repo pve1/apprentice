@@ -226,6 +226,10 @@
                            face))
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button t)
+      (when button-order
+        (put-text-property (1+ begin) (1+ end)
+                           'apprentice-button-order
+                           button-order))
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button-type 'elisp)
       (put-text-property (1+ begin) (1+ end)
@@ -302,6 +306,10 @@
                            face))
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button t)
+      (when button-order
+        (put-text-property (1+ begin) (1+ end)
+                           'apprentice-button-order
+                           button-order))
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button-type 'lisp)
       (put-text-property (1+ begin) (1+ end)
@@ -397,52 +405,59 @@
                                  'apprentice-button nil))
          t)))
 
+(defun apprentice-button-order (position)
+  (cl-getf (get-text-property
+            position
+            'apprentice-button-additional-properties)
+           'button-order))
+
 (defun apprentice-next-button ()
   (interactive)
-  (let ((original-pos (point)))
+  (when (= (point-max) (point))
+    (goto-char (point-min)))
+  (goto-char (next-single-char-property-change
+              (point)
+              'apprentice-button-order))
+  ;; On a button?
+  (unless (apprentice-button-order (point))
     (goto-char (next-single-char-property-change
                 (point)
-                'apprentice-button))
-    (when (apprentice-end-of-button-p)
-      (goto-char (next-single-char-property-change
-                  (point)
-                  'apprentice-button)))
-    (when (and (= (point) (point-max))
-               (not (= (point) (point-min))))
-      (goto-char (point-min))
-      (apprentice-next-button))))
+                'apprentice-button-order))))
 
 (defun apprentice-previous-button ()
   (interactive)
-  (let ((original-pos (point)))
+  (when (= (point-min) (point))
+    (goto-char (point-max)))
+  (goto-char (previous-single-char-property-change
+              (point)
+              'apprentice-button-order))
+  ;; On a button?
+  (unless (apprentice-button-order (point))
     (goto-char (previous-single-char-property-change
                 (point)
-                'apprentice-button))
-    (when (apprentice-beginning-of-button-p)
-      (goto-char (previous-single-char-property-change
-                  (point)
-                  'apprentice-button)))
-    (when (apprentice-end-of-button-p)
-      (goto-char (previous-single-char-property-change
-                  (point)
-                  'apprentice-button)))
-    (when (and (= (point) (point-min))
-               (not (= (point) (point-max))))
-      (goto-char (point-max))
-      (apprentice-previous-button))))
+                'apprentice-button-order))))
+
+(defun apprentice-jump-to-nth-button (count)
+  (goto-char (point-min))
+  (when (< 0 count)
+    (cl-block end
+      (dotimes (n count)
+        (apprentice-next-button)
+        (when (= (point-max) (point))
+          (cl-return-from end))))))
 
 (defun apprentice-jump-to-nth-button (count)
   (goto-char (point-min))
   ;; Reach the first button
   (when (< 0 count)
     (goto-char (next-single-char-property-change
-                (point) 'apprentice-button))
+                (point) 'apprentice-button-order))
     (dotimes (n (1- count))
       ;; Jump over the current button
       (goto-char
        (next-single-char-property-change
         (point)
-        'apprentice-button))
+        'apprentice-button-order))
       ;; Reach the next button
       (goto-char
        (next-single-char-property-change
