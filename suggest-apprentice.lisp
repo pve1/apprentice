@@ -458,6 +458,7 @@
                                  path)
   (let ((suggestions ())
         (line (getf *buffer-context* :line))
+        (file (getf *buffer-context* :filename))
         (toplevel-name))
     (flet ((suggest (x)
              (push (format-suggestion x)
@@ -482,6 +483,50 @@
                   (goto-char (region-end))
                   (apprentice-describe-form)))
               suggestions))
+      ;; Empty file
+      (when (and (null (preceding-char object))
+                 (null (following-char object)))
+        (let ((search-max-tries 3))
+          ;; Note: DIRECTORY returns truenames, so this might break if
+          ;; symlinks are present.
+          (labels ((up-dir (path)
+                     (let* ((dir (pathname-directory path))
+                            (len (length dir)))
+                       (when (and dir (< 1 len))
+                         (make-pathname
+                          :directory (butlast (pathname-directory path))))))
+                   (search-asd (path &optional (tries search-max-tries) acc)
+                     (when (and (<= 1 tries) path)
+                       (alexandria:when-let*
+                           ((asds (directory
+                                   (merge-pathnames "*.asd" path)))
+                            (ranked (sort asds
+                                          (lambda (x y)
+                                            (< (length (pathname-name x))
+                                               (length (pathname-name y))))))
+                            (first (first ranked)))
+                         (return-from search-asd
+                           (cons (pathname-name first) acc)))
+                       (search-asd (up-dir path)
+                                   (1- tries)
+                                   (cons (alexandria:last-elt
+                                          (pathname-directory path))
+                                         acc)))))
+            (let* ((asd-name (search-asd file))
+                   (package-inferred-package-name
+                     (format nil "~{~A~^/~}/~A"
+                             asd-name
+                             (pathname-name file))))
+                   (when asd-name
+                     (suggest #?{
+                              (defpackage #:${package-inferred-package-name}
+                                (:use #:cl)
+                                ;; (:local-nicknames)
+                                ;; (:import-from)
+                                (:export))
+
+                              ${""}(in-package #:${package-inferred-package-name})
+                              }))))))
       ;; Accessors
       (when (and (equal path '("defclass"))
                  (eql #\) (preceding-char object)))
