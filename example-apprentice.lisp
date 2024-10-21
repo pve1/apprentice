@@ -6,7 +6,6 @@
 ;;;;   "grep-apprentice"
 ;;;;   "describe-apprentice"
 ;;;;   "value-apprentice"
-;;;;   "history-apprentice"
 ;;;;   "method-apprentice"
 ;;;;   "toplevel-apprentice"
 ;;;;   "suggest-apprentice"
