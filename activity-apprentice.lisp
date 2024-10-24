@@ -9,11 +9,17 @@
                      :accessor activity-history
                      :initform nil)
    (history-length :initarg :history-length
-                    :accessor history-length
-                    :initform 10)
+                   :accessor history-length
+                   :initform 5)
    (proximity-cutoff :initarg :proximity-cutoff
                      :accessor proximity-cutoff
-                     :initform 20)))
+                     :initform 60)
+   (button-colors :initarg :button-colors
+                  :accessor button-colors
+                  :initform '((t :foreground "cyan")
+                              (t :foreground "#5555ffffffff")
+                              (t :foreground "#aaaaffffffff")
+                              (t :foreground "white")))))
 
 (defmethod activity-apprentice-tick (apprentice)
   (with-accessors ((proximity-cutoff proximity-cutoff)
@@ -60,15 +66,58 @@
            (select-window current-window)
            (other-window 1))))))
 
+(defun emacs-message (object)
+  (swank:eval-in-emacs `(message ,(princ-to-string object))))
+
+(defmethod activity-adjust-proximity ((ap activity-apprentice)
+                                      method)
+  (with-accessors ((proximity-cutoff proximity-cutoff)
+                   (history-length history-length)
+                   (activity-history activity-history))
+      ap
+    (case method
+      (:double (when (<= 10 proximity-cutoff)
+                 (setf proximity-cutoff (* 2 proximity-cutoff))))
+      (:halve (if (<= 20 proximity-cutoff)
+                  (setf proximity-cutoff
+                        (floor proximity-cutoff 2))
+                  (setf proximity-cutoff 10)))
+      (:inc (when (<= 10 proximity-cutoff)
+                   (incf proximity-cutoff 10)))
+      (:dec (if (<= 20 proximity-cutoff)
+                (decf proximity-cutoff 10)
+                (setf proximity-cutoff 10))))
+    (emacs-message (format nil "Proximity: ~A"
+                           proximity-cutoff))))
+
 (defmethod describe-with-apprentice ((ap activity-apprentice)
                                      object
                                      stream)
   (let* ((*standard-output* stream))
-    (activity-apprentice-tick ap)
-    (when (activity-history ap)
-      (apprentice-create-ephemerals ap)
-      (format t "Recent activity:~2%")
-      (loop :for entry :in (activity-history ap)
-            :do (activity-history-entry-button ap entry)
-                (terpri))
-      t)))
+    (flet ((color (n)
+             (nth n (button-colors ap))))
+      (activity-apprentice-tick ap)
+      (when (activity-history ap)
+        (apprentice-create-ephemerals ap)
+        (format t "Recent activity: ")
+        (put-lisp-button-here
+         ap "[P" `(activity-adjust-proximity *button-apprentice* :halve)
+         :face (color 0))
+        (put-lisp-button-here
+         ap "R" `(activity-adjust-proximity *button-apprentice* :dec)
+         :face (color 1))
+        (put-lisp-button-here
+         ap "O" `(activity-adjust-proximity *button-apprentice* :inc)
+         :face (color 2))
+        (put-lisp-button-here
+         ap "X]" `(activity-adjust-proximity *button-apprentice* :double)
+         :face (color 3))
+        (terpri)
+        (terpri)
+        (loop :for entry :in (activity-history ap)
+              :do (activity-history-entry-button ap entry)
+                  (terpri))
+        t))))
+
+
+
