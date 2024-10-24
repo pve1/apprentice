@@ -6,7 +6,7 @@
 
 (defvar *button-callbacks* (make-hash-table))
 (defvar *button-callback-id-counter* 0)
-(defvar *button-apprentice* nil)
+(defvar *button-apprentice*)
 
 (defun initialize-button-callbacks ()
   (setf *button-callback-id-counter* 0)
