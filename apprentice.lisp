@@ -160,8 +160,26 @@
   (:method (apprentice form)
     (eval form)))
 
+(defun describe-form-separator (label &optional (width 60) newline)
+  (assert (alexandria:positive-integer-p width))
+  (let* ((len (length label))
+         (width* (max (+ 6 len) width))
+         (dashes-left
+           (make-string (floor (- width* len) 2)
+                        :initial-element #\-))
+         (dashes-right
+           (make-string (- width* (length dashes-left) len)
+                        :initial-element #\-)))
+    (with-output-to-string (s)
+      (princ dashes-left s)
+      (princ label s)
+      (princ dashes-right s)
+      (when newline
+        (terpri s)))))
+
 ;;; Reads the package-indicator string returned by
 ;;; (slime-current-package).
+
 (defgeneric Read-package-designator (apprentice package-indicator-string)
   (:method (apprentice package-indicator-string)
     (read-from-string-with-apprentice apprentice
@@ -190,12 +208,18 @@
                    (form (read-from-string-with-apprentice
                           apprentice
                           form-string))
-                   (values (multiple-value-list
+                   (values))
+              (princ (load-time-value
+                      (describe-form-separator "*STANDARD-OUTPUT*" 60 t)))
+              (setf values (multiple-value-list
                             (eval-with-apprentice apprentice
-                                                  form))))
-              (format t "~&~%------------------------------------------------------------~%")
+                                                  form)))
+              (fresh-line)
+              (princ (load-time-value
+                      (describe-form-separator "VALUES" 60 t)))
               (dolist (v values)
-                (print v))
+                (prin1 v)
+                (terpri))
               (values-list values))
           (error (c)
             (princ c)))))))
