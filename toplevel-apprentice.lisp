@@ -47,8 +47,8 @@
                            :offset offset
                            :stream result)
                           (terpri result)))))
-      (push `(fontify-region ,offset ,(+ offset (length string)))
-            *description-properties*)
+      (push-description-property
+       `(fontify-region ,offset ,(+ offset (length string))))
       string)))
 
 (defclass Wide-toplevel-apprentice (toplevel-apprentice)
@@ -195,6 +195,6 @@
                     (terpri result)
                     (format result ";;; ~A~%" (file-namestring file))
                     (walk file result)))))
-      (push `(fontify-region ,offset ,(+ offset (length string)))
-            *description-properties*)
+      (push-description-property
+       `(fontify-region ,offset ,(+ offset (length string))))
       string)))

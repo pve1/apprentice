@@ -66,16 +66,16 @@
       (warn "No file position available for stream ~S." stream))
     (princ label stream)
     (setf there (file-position stream))
-    (push (list button-type
-                (+ here offset*)
-                (+ there offset*)
-                label
-                when-clicked
-                :face face
-                :redisplay redisplay
-                :name name
-                :arguments arguments)
-          *description-properties*)))
+    (push-description-property
+     (list button-type
+           (+ here offset*)
+           (+ there offset*)
+           label
+           when-clicked
+           :face face
+           :redisplay redisplay
+           :name name
+           :arguments arguments))))
 
 (defmethod put-lisp-button-here (apprentice label when-clicked
                                  &key (stream *standard-output*)
@@ -116,8 +116,8 @@
                    :arguments arguments))
 
 (defmethod create-ephemeral-elisp-function (apprentice symbol lambda-form)
-  (push (list 'ephemeral-function
+  (push-description-property
+   (list 'ephemeral-function
               :name symbol
               :lambda-string (swank::process-form-for-emacs
-                              lambda-form))
-        *description-properties*))
+                              lambda-form))))

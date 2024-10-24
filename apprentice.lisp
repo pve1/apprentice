@@ -63,6 +63,13 @@
                          symbol))))
     (apply fun args)))
 
+(defun Push-description-property (property &optional where)
+  (check-type where (member nil :last))
+  (if (eq where :last)
+      (let ((last (last *description-properties*)))
+        (rplacd last (cons property nil)))
+      (push property *description-properties*)))
+
 (defun Presentation-description (presentation-id)
   (let* ((desc (with-output-to-string (s)
                  (run-hook *before-describe-hook*)

@@ -104,9 +104,9 @@
         (unless (alexandria:ends-with (suggestion-string suggestion)
                                       #\newline)
           (terpri)))
-      (alexandria:appendf
-       *description-properties*
-       `((indent-region ,begin ,(file-position stream))))
+      (push-description-property
+       `(indent-region ,begin ,(file-position stream))
+       :last)
       t)))
 
 ;;; Helpers

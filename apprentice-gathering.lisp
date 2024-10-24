@@ -17,11 +17,11 @@
   (alexandria:with-gensyms (begin)
     `(let ((,begin (file-position ,stream)))
        (prog1 (progn ,@body)
-         (push (list 'add-face
+         (push-description-property
+          (list 'add-face
                      ,begin
                      (file-position stream)
-                     ,face)
-               *description-properties*)))))
+                     ,face))))))
 
 (defmethod describe-with-apprentice ((ap apprentice-gathering)
                                      object
