@@ -486,6 +486,7 @@
       ;; Empty file
       (when (and (null (preceding-char object))
                  (null (following-char object)))
+        ;; Package-inferred-system defpackage
         (let ((search-max-tries 3))
           ;; Note: DIRECTORY returns truenames, so this might break if
           ;; symlinks are present.
