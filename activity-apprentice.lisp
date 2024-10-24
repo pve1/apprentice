@@ -16,10 +16,10 @@
                      :initform 60)
    (button-colors :initarg :button-colors
                   :accessor button-colors
-                  :initform '((t :foreground "cyan")
-                              (t :foreground "#5555ffffffff")
+                  :initform '((t :foreground "white")
                               (t :foreground "#aaaaffffffff")
-                              (t :foreground "white")))))
+                              (t :foreground "#5555ffffffff")
+                              (t :foreground "cyan")))))
 
 (defmethod activity-apprentice-tick (apprentice)
   (with-accessors ((proximity-cutoff proximity-cutoff)
