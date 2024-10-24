@@ -57,14 +57,14 @@
 (defvar-local apprentice-ephemeral-functions nil)
 
 (defvar apprentice-help-line
-  (let ((s " [q]:quit [l|L]:lock [-|+]:freq [e]:eager [m]:mode ")
+  (let ((s "  [q]:quit [l|L]:lock [-|+]:freq [e]:eager [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'face 'default 'font-lock-face 'default))
     (concat s s2)))
 
 (defvar apprentice-locked-help-line
-  (let ((s " [q]:quit [-]|[+]:freq [m]:mode ")
+  (let ((s "  [q]:quit [-]|[+]:freq [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'font-lock-face 'default 'font-lock-face 'default))
@@ -757,7 +757,9 @@
 (defun apprentice-update-if-live-window (window)
   (let ((buf (window-buffer window)))
     (when (and (apprentice-buffer-p buf)
-               (not (eql (current-buffer) buf)))
+               (not (eql (current-buffer) buf))
+               ;; Don't try to update if the timer has been cancelled.
+               apprentice-describe-timer)
       (apprentice-update-apprentice-buffer buf))))
 
 (defun apprentice-timer-function ()
@@ -819,7 +821,19 @@
 (defun apprentice-cancel-timer ()
   (interactive)
   (cancel-timer apprentice-describe-timer)
-  (setf apprentice-describe-timer nil))
+  (setf apprentice-describe-timer nil)
+  (save-excursion
+    (walk-windows
+     (lambda (win)
+       (with-current-buffer (window-buffer win)
+         (when (apprentice-window-p win)
+           (message "Trying %s" win)
+           (goto-char (point-min))
+           (end-of-line)
+           (insert (propertize " INACTIVE"
+                               'face '(:foreground "red")
+                               'font-lock-face '(:foreground "red"))))))
+     nil t)))
 
 (defun apprentice-input-property (property-name)
   (cl-getf (cdr apprentice-input) property-name))
