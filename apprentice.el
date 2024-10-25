@@ -446,24 +446,6 @@
         (when (= (point-max) (point))
           (cl-return-from end))))))
 
-(defun apprentice-jump-to-nth-button (count)
-  (goto-char (point-min))
-  ;; Reach the first button
-  (when (< 0 count)
-    (goto-char (next-single-char-property-change
-                (point) 'apprentice-button-order))
-    (dotimes (n (1- count))
-      ;; Jump over the current button
-      (goto-char
-       (next-single-char-property-change
-        (point)
-        'apprentice-button-order))
-      ;; Reach the next button
-      (goto-char
-       (next-single-char-property-change
-        (point)
-        'apprentice-button)))))
-
 (defun apprentice-check-apprentice-buffer ()
   (unless (eql major-mode 'apprentice-mode)
     (error "Not an apprentice buffer.")))
