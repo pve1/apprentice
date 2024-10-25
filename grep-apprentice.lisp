@@ -153,6 +153,7 @@
              :name 'grep-apprentice-button
              :arguments (list (symbol-name object)
                               (third r))
-             :offset offset)
+             :offset offset
+             :skippable t)
             (terpri))
           (fresh-line))))))

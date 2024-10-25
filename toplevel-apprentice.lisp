@@ -107,7 +107,8 @@
                                            (namestring lisp-file))
                           :face :unspecified
                           :offset offset
-                          :stream stream)
+                          :stream stream
+                          :skippable t)
                          (terpri stream))))
            (collect-lines (lisp-file)
              (alexandria:with-input-from-file (s lisp-file)
@@ -189,7 +190,8 @@
                                           (namestring file))
                          :face :unspecified
                          :offset offset
-                         :stream result)
+                         :stream result
+                         :skippable t)
                         (terpri result))))
                   (dolist (file (select-files))
                     (terpri result)

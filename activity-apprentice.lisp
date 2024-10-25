@@ -51,7 +51,8 @@
                 line)
      nil
      :name 'activity-apprentice-button
-     :arguments (list line file))))
+     :arguments (list line file)
+     :skippable t)))
 
 (defmethod apprentice-create-ephemerals ((ap activity-apprentice))
   (create-ephemeral-elisp-function
@@ -105,13 +106,16 @@
          :face (color 0))
         (put-lisp-button-here
          ap "R" `(activity-adjust-proximity *button-apprentice* :dec)
-         :face (color 1))
+         :face (color 1)
+         :skippable t)
         (put-lisp-button-here
          ap "O" `(activity-adjust-proximity *button-apprentice* :inc)
-         :face (color 2))
+         :face (color 2)
+         :skippable t)
         (put-lisp-button-here
          ap "X]" `(activity-adjust-proximity *button-apprentice* :double)
-         :face (color 3))
+         :face (color 3)
+         :skippable t)
         (terpri)
         (terpri)
         (loop :for entry :in (activity-history ap)
