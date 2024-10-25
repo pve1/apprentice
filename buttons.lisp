@@ -55,7 +55,8 @@
                                  face
                                  redisplay
                                  name
-                                 arguments)
+                                 arguments
+                                 skippable)
   (let ((here (file-position stream))
         (there)
         (offset* (typecase offset
@@ -75,7 +76,8 @@
            :face face
            :redisplay redisplay
            :name name
-           :arguments arguments))))
+           :arguments arguments
+           :skippable skippable))))
 
 (defmethod put-lisp-button-here (apprentice label when-clicked
                                  &key (stream *standard-output*)
@@ -83,7 +85,8 @@
                                       face
                                       redisplay
                                       name
-                                      arguments)
+                                      arguments
+                                      skippable)
   (put-button-here apprentice
                    'lisp-button
                    label
@@ -94,7 +97,8 @@
                    :stream stream
                    :redisplay redisplay
                    :name name
-                   :arguments arguments))
+                   :arguments arguments
+                   :skippable skippable))
 
 ;; Fixme: Depends on internal swank function.
 (defmethod put-elisp-button-here (apprentice label when-clicked
@@ -103,7 +107,8 @@
                                        face
                                        redisplay
                                        name
-                                       arguments)
+                                       arguments
+                                       skippable)
   (put-button-here apprentice
                    'elisp-button
                    label
@@ -113,7 +118,8 @@
                    :stream stream
                    :redisplay redisplay
                    :name name
-                   :arguments arguments))
+                   :arguments arguments
+                   :skippable skippable))
 
 (defmethod create-ephemeral-elisp-function (apprentice symbol lambda-form)
   (push-description-property

@@ -206,7 +206,7 @@
 (defun apprentice-insert-elisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
                               &key face redisplay name
-                              arguments &allow-other-keys)
+                              arguments skippable &allow-other-keys)
       prop
     (setf face (or face 'font-lock-type-face))
     (let ((keymap (make-sparse-keymap))
@@ -238,6 +238,7 @@
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button-additional-properties
                          (list 'button-order button-order
+                               'skippable skippable
                                'current-buffer buf)))))
 
 (defun apprentice-activate-button-then-next ()
@@ -289,7 +290,7 @@
 (defun apprentice-insert-lisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
                               &key face redisplay name
-                              arguments &allow-other-keys)
+                              arguments skippable &allow-other-keys)
       prop
     (setf face (or face 'font-lock-keyword-face))
     (let ((keymap (make-sparse-keymap))
@@ -318,6 +319,7 @@
       (put-text-property (1+ begin) (1+ end)
                          'apprentice-button-additional-properties
                          (list 'button-order button-order
+                               'skippable skippable
                                'current-buffer buf)))))
 
 (defun apprentice-insert-help-line ()
@@ -415,27 +417,43 @@
   (interactive)
   (when (= (point-max) (point))
     (goto-char (point-min)))
-  (goto-char (next-single-char-property-change
-              (point)
-              'apprentice-button-order))
-  ;; On a button?
-  (unless (apprentice-button-order (point))
-    (goto-char (next-single-char-property-change
-                (point)
-                'apprentice-button-order))))
+  (cl-tagbody
+   again
+   (goto-char (next-single-char-property-change
+               (point)
+               'apprentice-button-order))
+   ;; On a button?
+   (unless (apprentice-button-order (point))
+     (goto-char (next-single-char-property-change
+                 (point)
+                 'apprentice-button-order)))
+   (when (and (< (point) (point-max))
+              (cl-getf (get-text-property
+                        (point)
+                        'apprentice-button-additional-properties)
+                       'skippable))
+     (go again))))
 
 (defun apprentice-previous-button ()
   (interactive)
   (when (= (point-min) (point))
     (goto-char (point-max)))
-  (goto-char (previous-single-char-property-change
-              (point)
-              'apprentice-button-order))
-  ;; On a button?
-  (unless (apprentice-button-order (point))
-    (goto-char (previous-single-char-property-change
-                (point)
-                'apprentice-button-order))))
+  (cl-tagbody
+   again
+   (goto-char (previous-single-char-property-change
+               (point)
+               'apprentice-button-order))
+   ;; On a button?
+   (unless (apprentice-button-order (point))
+     (goto-char (previous-single-char-property-change
+                 (point)
+                 'apprentice-button-order)))
+   (when (and (< (point-min) (point))
+              (cl-getf (get-text-property
+                        (point)
+                        'apprentice-button-additional-properties)
+                       'skippable))
+     (go again))))
 
 (defun apprentice-jump-to-nth-button (count)
   (goto-char (point-min))
