@@ -26,8 +26,8 @@
                    (history-length history-length)
                    (activity-history activity-history))
       apprentice
-    (let* ((line (getf *buffer-context* :line))
-           (file (getf *buffer-context* :filename))
+    (let* ((line (buffer-context-property :line))
+           (file (buffer-context-property :filename))
            (prox proximity-cutoff)
            (find-predicate
              (lambda (x)

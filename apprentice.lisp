@@ -49,6 +49,9 @@
               *previous-description* desc))
       :max-size-exceeded))
 
+(defun buffer-context-property (property)
+  (getf *buffer-context* property))
+
 (defun run-hook (hook)
   (when hook
     (dolist (f hook)
@@ -134,7 +137,7 @@
 (defgeneric Resolve-symbol (apprentice symbol-name))
 
 (defmethod resolve-symbol (apprentice symbol-name)
-  (let* ((pkg-string (getf *buffer-context* :package))
+  (let* ((pkg-string (buffer-context-property :package))
          (pkg (when pkg-string
                 (find-package (read-from-string pkg-string))))
          (*package* (or pkg *package*)))

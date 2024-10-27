@@ -16,7 +16,7 @@
   nil)
 
 (defmethod apprentice-update ((ap toplevel-apprentice) object)
-  (let ((current-file (getf *buffer-context* :filename))
+  (let ((current-file (buffer-context-property :filename))
         (offset (file-position *standard-output*))
         (string))
     (when current-file
@@ -128,13 +128,13 @@
              (case (file-selection-mode ap)
                (:directory
                 (directory
-                 (if (getf *buffer-context* :filename)
+                 (if (buffer-context-property :filename)
                      (merge-pathnames
                       "*.lisp"
-                      (getf *buffer-context* :filename))
+                      (buffer-context-property :filename))
                      (merge-pathnames "*.lisp"))))
                (:file
-                (alexandria:when-let* ((file (getf *buffer-context*
+                (alexandria:when-let* ((file (buffer-context-property
                                                    :filename))
                                        (exist (probe-file file)))
                   (list file))))))

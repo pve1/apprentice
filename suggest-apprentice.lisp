@@ -83,7 +83,7 @@
                 (suggestion-string suggestion))
          nil
          :name 'insert-toplevel-suggestion
-         :arguments (list (getf *buffer-context* :filename)
+         :arguments (list (buffer-context-property :filename)
                           (suggestion-string suggestion)
                           (etypecase suggestion
                             (string nil)
@@ -155,13 +155,13 @@
               (closer-mop:class-direct-slots class)))))
 
 (defmethod suggest-get-current-path (ap)
-  (alexandria:when-let ((file (getf *buffer-context* :filename)))
+  (alexandria:when-let ((file (buffer-context-property :filename)))
     (swank:eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
         (apprentice-current-form-path)))))
 
 (defmethod suggest-get-toplevel-name (ap)
-  (alexandria:when-let ((file (getf *buffer-context* :filename)))
+  (alexandria:when-let ((file (buffer-context-property :filename)))
     (swank:eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
         (apprentice-toplevel-form-name)))))
@@ -248,7 +248,7 @@
          (name-looks-like-special-variable
            (and (alexandria:starts-with #\* name)
                 (alexandria:ends-with #\* name)))
-         (line (getf *buffer-context* :line))
+         (line (buffer-context-property :line))
          (toplevel-name))
     (flet ((suggest (x &key pre-insert-elisp-form
                             post-insert-elisp-form)
@@ -457,8 +457,8 @@
 (defmethod generate-suggestions (ap (object looking-at-character)
                                  path)
   (let ((suggestions ())
-        (line (getf *buffer-context* :line))
-        (file (getf *buffer-context* :filename))
+        (line (buffer-context-property :line))
+        (file (buffer-context-property :filename))
         (toplevel-name))
     (flet ((suggest (x)
              (push (format-suggestion x)
@@ -474,7 +474,7 @@
              (alexandria:ends-with-subseq
               suffix path :test #'equal)))
       ;; Monitor form
-      (when (getf *buffer-context* :region)
+      (when (buffer-context-property :region)
         (push (make-instance 'suggestion
                 :label "[MONITOR FORM]"
                 :pre-insert-elisp-form '(progn)
@@ -536,7 +536,7 @@
               (swank:eval-in-emacs
                `(with-current-buffer
                     (get-file-buffer
-                     ,(getf *buffer-context* :filename))
+                     ,(buffer-context-property :filename))
                   (save-excursion
                    (let ((end (point)))
                      (backward-sexp)
