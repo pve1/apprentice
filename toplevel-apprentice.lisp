@@ -43,8 +43,7 @@
                                  (not (member (alexandria:first-elt line)
                                               '(#\Space #\Tab #\;))))
                       :do (put-elisp-button-here
-                           ap
-                           line
+                           ap line
                            `(let ((current-window
                                     (get-buffer-window)))
                               (goto-line ,line-number
@@ -65,6 +64,9 @@
   ((sort-lines-p :initarg :sort-lines-p
                  :accessor sort-lines-p
                  :initform nil)
+   (recenter :initarg :recenter
+             :accessor recenter
+             :initform nil)
    (file-selection-mode :initarg :file-selection-mode
                         :accessor file-selection-mode
                         :initform :file) ; :directory
@@ -74,6 +76,7 @@
 
 (defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
+  (check-type (recenter w) (or null integer))
   (when (stringp ignore-line-regexp)
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
@@ -87,12 +90,12 @@
         (string))
     (create-ephemeral-elisp-function
      ap 'toplevel-apprentice-button
-     '(lambda (line-number file)
+     `(lambda (line-number file)
        (let ((current-window (get-buffer-window)))
          (goto-line line-number
                     (find-file-other-window
                      file))
-         (recenter-top-bottom 1)
+         (recenter-top-bottom ,(recenter ap))
          (if current-window
              (select-window current-window)
              (other-window 1)))))
