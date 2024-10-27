@@ -413,7 +413,7 @@
             'apprentice-button-additional-properties)
            'button-order))
 
-(defun apprentice-next-button ()
+(defun apprentice-next-button (&optional no-skip)
   (interactive)
   (when (= (point-max) (point))
     (goto-char (point-min)))
@@ -427,14 +427,15 @@
      (goto-char (next-single-char-property-change
                  (point)
                  'apprentice-button-order)))
-   (when (and (< (point) (point-max))
+   (when (and (null no-skip)
+              (< (point) (point-max))
               (cl-getf (get-text-property
                         (point)
                         'apprentice-button-additional-properties)
                        'skippable))
      (go again))))
 
-(defun apprentice-previous-button ()
+(defun apprentice-previous-button (&optional no-skip)
   (interactive)
   (when (= (point-min) (point))
     (goto-char (point-max)))
@@ -448,7 +449,8 @@
      (goto-char (previous-single-char-property-change
                  (point)
                  'apprentice-button-order)))
-   (when (and (< (point-min) (point))
+   (when (and (null no-skip)
+              (< (point-min) (point))
               (cl-getf (get-text-property
                         (point)
                         'apprentice-button-additional-properties)
@@ -460,7 +462,7 @@
   (when (< 0 count)
     (cl-block end
       (dotimes (n count)
-        (apprentice-next-button)
+        (apprentice-next-button t)
         (when (= (point-max) (point))
           (cl-return-from end))))))
 
