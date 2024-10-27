@@ -6,14 +6,24 @@
 (in-package :apprentice) cx
 
 (defclass Toplevel-apprentice (caching-apprentice)
-  ((busy-result :initarg :busy-result
-                :accessor busy-result
-                :initform "Toplevel forms: ...")))
+  ())
 
 ;; Improve this
 (defmethod apprentice-same-input-as-last-time-p ((ap toplevel-apprentice)
                                                  (input looking-at-character))
   nil)
+
+(defmethod busy-result ((ap toplevel-apprentice))
+  (last-result ap))
+
+(defmethod last-result :around ((ap toplevel-apprentice))
+  (let ((offset (file-position *description-stream*))
+        (result (call-next-method)))
+    (when result
+      (push-description-property
+       `(fontify-region ,offset ,(+ offset (length result)))
+       :last))
+    result))
 
 (defmethod apprentice-update ((ap toplevel-apprentice) object)
   (let ((current-file (buffer-context-property :filename))
