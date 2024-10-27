@@ -345,6 +345,7 @@
                           (make-instance '${name}
                             @{kw-slot-pairs}))
                      }))
+          ;; With-foo
           (let* ((cl-interpol:*list-delimiter* #?"\n")
                  (accessor-spec (suggest-with-accessors-spec ap object)))
             (suggest #?{
