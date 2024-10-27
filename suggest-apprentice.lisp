@@ -343,7 +343,16 @@
                                           slot slot))))
             (suggest #?{(defun ${name} ${(or slot-strings "()")}
                           (make-instance '${name}
-                            @{kw-slot-pairs}))})))
+                            @{kw-slot-pairs}))
+                     }))
+          (let* ((cl-interpol:*list-delimiter* #?"\n")
+                 (accessor-spec (suggest-with-accessors-spec ap object)))
+            (suggest #?{
+                     (defmacro with-${name} (instance &body body)
+                       `(with-accessors (@{accessor-spec})
+                            ,instance
+                          ,@body))
+                     })))
         ;; Toplevel definitions (not fboundp)
         (when (and (not (fboundp object))
                    (not name-looks-like-special-variable))
