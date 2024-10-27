@@ -53,6 +53,8 @@
           (query-replace ,from ,to))
         t))))
 
+;; Note: Replace won't work on files that haven't been opened by
+;; emacs.
 (defmethod grep-apprentice-insert-replace-button (ap from files
                                                   &key offset)
   (put-elisp-button-here

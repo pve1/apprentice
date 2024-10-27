@@ -81,8 +81,6 @@
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
 
-;; Note: Replace won't work on files that haven't been opened by
-;; emacs.
 (defmethod apprentice-update ((ap wide-toplevel-apprentice)
                               object)
   (let ((offset (file-position *standard-output*))
