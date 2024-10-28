@@ -106,7 +106,7 @@
                    (end (+ begin (length label))))
               (push-description-property
                (apply #'make-button
-                      ap 'lisp
+                      ap 'lisp-button
                       label
                       (make-button-callback-form ap when-clicked)
                       :begin begin
