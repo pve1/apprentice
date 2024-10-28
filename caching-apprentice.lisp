@@ -104,7 +104,6 @@
             (let* ((begin (+ relative-begin
                              (file-position *description-stream*)))
                    (end (+ begin (length label))))
-              (format *debug-io* "Pushing old button ~A~%" label)
               (push-description-property
                (apply #'make-button
                       ap 'lisp
