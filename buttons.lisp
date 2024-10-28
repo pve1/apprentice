@@ -21,6 +21,10 @@
           (list ap callback))
     id))
 
+(defmethod make-button-callback-form (ap when-clicked)
+  `(eval-button-callback
+    ,(make-button-callback ap when-clicked)))
+
 (defun lookup-button-callback (id)
   (lookup-button-callback-with-apprentice *apprentice* id))
 
@@ -49,6 +53,24 @@
   (let ((*button-apprentice* apprentice))
     (funcall callback apprentice)))
 
+(defmethod make-button (apprentice button-type label when-clicked
+                        &key begin end
+                             face
+                             redisplay
+                             name arguments
+                             skippable
+                             &allow-other-keys)
+  (list button-type
+        begin
+        end
+        label
+        when-clicked
+        :face face
+        :redisplay redisplay
+        :name name
+        :arguments arguments
+        :skippable skippable))
+
 (defmethod put-button-here (apprentice button-type label when-clicked
                             &key (stream *standard-output*)
                                  (offset 0)
@@ -68,16 +90,17 @@
     (princ label stream)
     (setf there (file-position stream))
     (push-description-property
-     (list button-type
-           (+ here offset*)
-           (+ there offset*)
-           label
-           when-clicked
-           :face face
-           :redisplay redisplay
-           :name name
-           :arguments arguments
-           :skippable skippable))))
+     (make-button apprentice
+                  button-type
+                  label
+                  when-clicked
+                  :begin (+ here offset*)
+                  :end (+ there offset*)
+                  :face face
+                  :redisplay redisplay
+                  :name name
+                  :arguments arguments
+                  :skippable skippable))))
 
 (defmethod put-lisp-button-here (apprentice label when-clicked
                                  &key (stream *standard-output*)
@@ -90,8 +113,8 @@
   (put-button-here apprentice
                    'lisp-button
                    label
-                   `(eval-button-callback
-                     ,(make-button-callback apprentice when-clicked))
+                   (make-button-callback-form apprentice
+                                              when-clicked)
                    :face face
                    :offset offset
                    :stream stream
