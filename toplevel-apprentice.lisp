@@ -1,6 +1,8 @@
 ;;;; Requires
 ;;;;   cl-ppcre
+;;;;   alexandria
 ;;;;   "apprentice"
+;;;;   "caching-apprentice"
 ;;;;   "buttons"
 
 (in-package :apprentice) cx
@@ -11,10 +13,14 @@
 ;; Improve this
 (defmethod apprentice-same-input-as-last-time-p ((ap toplevel-apprentice)
                                                  (input looking-at-character))
-  nil)
+  (when (typep (last-input ap) 'looking-at-character)
+    (and (eql (following-char input)
+              (following-char (last-input ap)))
+         (eql (preceding-char input)
+              (preceding-char (last-input ap))))))
 
 (defmethod busy-result ((ap toplevel-apprentice))
-  (last-result ap))
+  (last-result-with-state ap))
 
 (defmethod last-result :around ((ap toplevel-apprentice))
   (let ((offset (file-position *description-stream*))
@@ -146,7 +152,7 @@
                      (merge-pathnames "*.lisp"))))
                (:file
                 (alexandria:when-let* ((file (buffer-context-property
-                                                   :filename))
+                                              :filename))
                                        (exist (probe-file file)))
                   (list file))))))
       (setf string
