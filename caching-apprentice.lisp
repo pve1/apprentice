@@ -36,7 +36,7 @@
 
 (defmethod last-result-with-state (object)
   (prog1 (last-result object)
-    (dolist (state (last-state object))
+    (dolist (state (reverse (last-state object)))
       (funcall state))))
 
 (defmethod apprentice-need-update-p (object input)
