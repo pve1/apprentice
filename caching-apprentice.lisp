@@ -21,10 +21,7 @@
                 :initform nil)
    (busy-result :initarg :busy-result
                 :accessor busy-result
-                :initform " ... ")
-   (last-state :initarg :last-state
-               :accessor last-state
-               :initform nil)))
+                :initform " ... ")))
 
 (defmethod apprentice-same-input-as-last-time-p (object input)
   (equal (last-input object) input))
@@ -33,11 +30,6 @@
   (and (symbolp (last-input object))
        (equal (symbol-name (last-input object))
               (symbol-name input))))
-
-(defmethod last-result-with-state (object)
-  (prog1 (last-result object)
-    (dolist (state (reverse (last-state object)))
-      (funcall state))))
 
 (defmethod apprentice-need-update-p (object input)
   (if (<= (update-interval object)
@@ -63,9 +55,6 @@
 (defgeneric Apprentice-update (object input)
   (:documentation ""))
 
-(defmethod apprentice-update :before (object input)
-  (setf (last-state object) nil))
-
 (defmethod apprentice-update (object input)
   "")
 
@@ -80,7 +69,7 @@
           ((and need (not can))
            (busy-result object))
           ((not need)
-           (last-result-with-state object)))))
+           (last-result object)))))
 
 (defmethod describe-with-apprentice ((ap caching-apprentice)
                                      object
@@ -90,26 +79,3 @@
     (when result
       (princ result stream)
       t)))
-
-;; Must record lisp buttons so that callbacks will be properly
-;; created when returning cached content.
-(defmethod put-lisp-button-here :after ((ap caching-apprentice)
-                                        label
-                                        when-clicked
-                                        &rest rest
-                                        &key stream offset)
-  (let ((relative-begin (- (file-position stream)
-                           offset)))
-    (push (lambda ()
-            (let* ((begin (+ relative-begin
-                             (file-position *description-stream*)))
-                   (end (+ begin (length label))))
-              (push-description-property
-               (apply #'make-button
-                      ap 'lisp-button
-                      label
-                      (make-button-callback-form ap when-clicked)
-                      :begin begin
-                      :end end
-                      rest))))
-          (last-state ap))))
