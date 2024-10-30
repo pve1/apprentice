@@ -372,7 +372,7 @@
              (apprentice-add-face prop))
             (apprentice::ephemeral-function
              (apprentice-create-ephemeral-function prop))
-            (t (warn "Bad property %s" prop))))))
+            (t (warn "Bad property %S" prop))))))
     (goto-char (point-min))
     ;; Insert the help line last, so that the property offsets work
     ;; directly. Consider: offsets could be relative.
