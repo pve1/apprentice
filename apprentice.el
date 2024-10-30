@@ -15,6 +15,7 @@
 (define-key apprentice-mode-map (kbd "-") 'apprentice-slower-polling)
 (define-key apprentice-mode-map (kbd "m") 'apprentice-toggle-update-mode)
 (define-key apprentice-mode-map (kbd "e") 'apprentice-toggle-eager)
+(define-key apprentice-mode-map (kbd "M-.") 'slime-edit-definition)
 (define-key apprentice-mode-map [?	] 'apprentice-next-button) ; tab
 (define-key apprentice-mode-map
   (kbd "<backtab>") 'apprentice-previous-button) ; s-tab
