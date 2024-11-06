@@ -67,9 +67,6 @@
            (select-window current-window)
            (other-window 1))))))
 
-(defun emacs-message (object)
-  (swank:eval-in-emacs `(message ,(princ-to-string object))))
-
 (defmethod activity-adjust-proximity ((ap activity-apprentice)
                                       method)
   (with-accessors ((proximity-cutoff proximity-cutoff)

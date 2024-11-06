@@ -150,3 +150,7 @@
               :name symbol
               :lambda-string (swank::process-form-for-emacs
                               lambda-form))))
+
+(defun emacs-message (object)
+  (swank:eval-in-emacs `(message ,(princ-to-string object))))
+
