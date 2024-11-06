@@ -27,6 +27,27 @@
         '(face apprentice-dim-face
           font-lock-face apprentice-dim-face))))))
 
+(defun method-apprentice-method-description (method)
+  (list :name (closer-mop:generic-function-name
+               (closer-mop:method-generic-function method))
+        :specializers
+        (mapcar (lambda (spec)
+                  (if (typep spec 'class)
+                      (class-name spec)
+                      (list 'eql
+                            (closer-mop:eql-specializer-object spec))))
+                (closer-mop:method-specializers method))
+        :qualifiers (closer-common-lisp:method-qualifiers method)))
+
+(defun method-apprentice-format-description (description stream
+                                             &key include-name)
+  (destructuring-bind (&key name specializers qualifiers) description
+    (format stream "(~S ~{~S ~}(~{~S~^ ~}))"
+            name
+            qualifiers
+            specializers)))
+
+;; Todo: extract method list, use in "related methods"
 (defmethod describe-with-apprentice ((ap method-apprentice)
                                      (object symbol)
                                      stream)
@@ -34,10 +55,7 @@
              (typep (fdefinition object) 'generic-function))
     (let* ((*standard-output* stream)
            (function (fdefinition object))
-           (methods (closer-mop:generic-function-methods function))
-           (descriptions (mapcar (lambda (m)
-                                   (method-apprentice-method-description ap m))
-                                 methods)))
+           (methods (closer-mop:generic-function-methods function)))
       (when methods
         (format t "Methods of ~A:~2%" object)
         (setf *method-apprentice-methods*
@@ -47,8 +65,10 @@
         (loop :for method :in methods
               :for i :from 0
               :do (let ((readable (method-apprentice-method-description
-                                   ap method)))
-                    (destructuring-bind (&key specializers qualifiers)
+                                   method)))
+                    (destructuring-bind (&key specializers
+                                              qualifiers
+                                              name)
                         readable
                       (if qualifiers
                           (format t "(~{~S~^ ~})~{ ~S~} "
@@ -66,14 +86,5 @@
                       (terpri))))
         t))))
 
-(defmethod method-apprentice-method-description ((ap method-apprentice)
-                                                 method)
-  (list :specializers
-        (mapcar (lambda (spec)
-                  (if (typep spec 'class)
-                      (class-name spec)
-                      (list 'eql
-                            (closer-mop:eql-specializer-object spec))))
-                (closer-mop:method-specializers method))
-        :qualifiers (closer-common-lisp:method-qualifiers method)))
+
 
