@@ -72,6 +72,9 @@
     (setf (ignore-line-regexp w)
           (cl-ppcre:create-scanner ignore-line-regexp))))
 
+(defmethod busy-result ((ap wide-toplevel-apprentice))
+  (last-result ap))
+
 (defclass toplevel-line ()
   ((line :initarg :line
          :accessor line
@@ -93,6 +96,7 @@
    :face :unspecified
    :skippable t))
 
+;; Scans the files and returns a list of toplevel-line instancs.
 ;; Should not put buttons.
 (defmethod apprentice-update ((ap wide-toplevel-apprentice) input)
   (let* ((ignore-line-scanner (ignore-line-regexp ap)))
@@ -130,9 +134,6 @@
         (if (sort-lines-p ap)
             (sort lines #'string< :key #'line)
             lines)))))
-
-(defmethod busy-result ((ap wide-toplevel-apprentice))
-  (last-result ap))
 
 (defmethod describe-with-apprentice ((ap wide-toplevel-apprentice)
                                      object
