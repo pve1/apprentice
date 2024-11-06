@@ -119,6 +119,8 @@
            (let ((sym (make-symbol symbol-name)))
              (setf (get sym 'package-indicator) pkg)
              sym)))
+    (setf (getf *buffer-context* 'package-indicator)
+          package-indicator)
     (cond ((eq :current package-indicator)
            (multiple-value-bind (sym exist)
                (find-symbol symbol-name *package*)
