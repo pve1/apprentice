@@ -202,7 +202,7 @@
                redisplay
                (cl-getf additional 'button-order)))
           (error (apprentice-cancel-timer)
-                 (message "%s" error)))))))
+                 (message "%S" error)))))))
 
 (defun apprentice-insert-elisp-button (prop &optional button-order)
   (cl-destructuring-bind (tag begin end label when-clicked-form
@@ -280,7 +280,8 @@
                                      t)) ; may otherwise return unreadable objects
                 (slime-eval when-clicked-form)))
           (error (apprentice-cancel-timer)
-                 (message "%s" error)))
+                 (setf redisplay nil)
+                 (message "%S" error)))
         (when redisplay
           (apprentice-update-apprentice-buffer
            (cl-getf additional 'buf))
