@@ -384,6 +384,44 @@
                      ()
                      (:documentation ""))})))
       ;; Not toplevel
+      ;; Exports
+      (when (path-starts-with '("defpackage" ":export"))
+        (let ((cl-interpol:*list-delimiter* #?"\n#:")
+              exports)
+          (do-external-symbols (sym *package*)
+            (push (string-downcase sym) exports))
+          (setf exports (sort exports #'string<))
+          (suggest (if exports
+                       #?{(:export #:@{exports})}
+                       #?{(:export)})
+                   :pre-insert-elisp-form `(progn
+                                             (up-list -1)
+                                             (kill-sexp)))))
+      ;; Imports
+      (when (path-starts-with '("defpackage" ":import-from"))
+        (let ((cl-interpol:*list-delimiter* #?"\n")
+              (imports (make-hash-table)))
+          (loop :for sym :being :each
+                :present-symbol :in *package*
+                :when (not (eq *package* (symbol-package sym)))
+                :do (push sym (gethash (symbol-package sym) imports)))
+          (let* ((packages (alexandria:hash-table-keys imports))
+                 (clauses
+                   (mapcar
+                    (lambda (p)
+                      (let ((cl-interpol:*list-delimiter* #?"\n#:")
+                            (symbols (sort
+                                      (mapcar #'string-downcase
+                                              (gethash p imports))
+                                      #'string<)))
+                        #?{(:import-from #:${(string-downcase
+                                              (package-name p))}
+                                              #:@{symbols})}))
+                    packages)))
+            (suggest #?{@{clauses}}
+                     :pre-insert-elisp-form `(progn
+                                               (up-list -1)
+                                               (kill-sexp))))))
       ;; Accessors
       (when (and (<= 2 (length path))
                  (path-starts-with '("defclass")))
