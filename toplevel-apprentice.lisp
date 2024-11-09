@@ -120,8 +120,6 @@
     (when sub
       (aref sub 0))))
 
-;; (extract-toplevel-name "(defun Asdasdfoo asdasd")
-
 ;; Scans the files and returns a list of toplevel-line instancs.
 ;; Should not put buttons.
 (defmethod apprentice-update ((ap wide-toplevel-apprentice) input)
