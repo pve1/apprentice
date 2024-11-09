@@ -126,6 +126,15 @@
                   "[EXPORT]"
                   `(export ',object (find-package ,(package-name *package*)))
                   :stream stream
+                  :redisplay t))
+                ((and (null state)
+                      (symbol-package object))
+                 (space)
+                 (put-lisp-button-here
+                  ap
+                  "[IMPORT]"
+                  `(import ',object (find-package ,(package-name *package*)))
+                  :stream stream
                   :redisplay t))))
         ;; Makunbound
         (when (and (boundp object)
