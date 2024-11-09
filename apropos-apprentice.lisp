@@ -117,14 +117,14 @@
 (defmethod apropos-export-button ((ap apropos-apprentice) symbol
                                   &key offset)
   (put-lisp-button-here
-   ap "[EXPORT]"
-   `(progn
-      (let ((symbols (apropos-export-symbols *button-apprentice*
-                                             ',symbol)))
-        (emacs-message
-         (format nil "Exported ~A symbols from ~S."
-                 (length symbols)
-                 (package-name *package*)))))
+   ap "[EXPRSNT]"
+   `(let ((symbols (apropos-export-symbols
+                    *button-apprentice*
+                    ',symbol)))
+      (emacs-message
+       (format nil "Exported ~A symbols from ~S."
+               (length symbols)
+               (package-name *package*))))
    :offset offset))
 
 (defmethod apropos-import-symbols ((ap apropos-apprentice)
@@ -142,16 +142,15 @@
                                   &key offset)
   (put-lisp-button-here
    ap "[IMPORT]"
-   `(progn
-      (let ((symbols (apropos-import-symbols *button-apprentice*
-                                             ',symbol)))
-        (emacs-message
-         (format nil "Imported ~A symbols into ~S."
-                 (length symbols)
-                 (package-name *package*)))))
+   `(let ((symbols (apropos-import-symbols
+                    *button-apprentice*
+                    ',symbol)))
+      (emacs-message
+       (format nil "Imported ~A symbols into ~S."
+               (length symbols)
+               (package-name *package*))))
    :offset offset))
 
-;; TODO: add import button for "other"
 (defmethod apprentice-update ((ap apropos-apprentice)
                               (object symbol))
   (alexandria:when-let* ((fn (ignore-input-function ap))
