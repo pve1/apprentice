@@ -135,6 +135,17 @@
                   "[IMPORT]"
                   `(import ',object (find-package ,(package-name *package*)))
                   :stream stream
+                  :redisplay t))
+                ((and state
+                      (not (eq sym object))
+                      (symbol-package object))
+                 (space)
+                 (put-lisp-button-here
+                  ap
+                  "[SHDWIMPORT]"
+                  `(shadowing-import ',object
+                                     (find-package ,(package-name *package*)))
+                  :stream stream
                   :redisplay t))))
         ;; Makunbound
         (when (and (boundp object)
