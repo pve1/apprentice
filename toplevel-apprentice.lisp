@@ -4,6 +4,7 @@
 ;;;;   "apprentice"
 ;;;;   "caching-apprentice"
 ;;;;   "buttons"
+;;;;   "symbols"
 
 (in-package :apprentice) cx
 
@@ -55,6 +56,11 @@
    (sort-lines-p :initarg :sort-lines-p
                  :accessor sort-lines-p
                  :initform nil)
+   (line-display-mode :initarg :line-display-mode
+                      :accessor line-display-mode
+                      :initform (list :normal
+                                      :names
+                                      :uninterned))
    (recenter :initarg :recenter
              :accessor recenter
              :initform nil)
@@ -63,7 +69,10 @@
                         :initform :file) ; :directory
    (ignore-line-regexp :initarg :ignore-line-regexp
                        :accessor ignore-line-regexp
-                       :initform "^ *$|^;|^\\(in-package")))
+                       :initform "^ *$|^;|^\\(in-package")
+   (symbols :initarg :symbols
+            :accessor symbols
+            :initform nil)))
 
 (defmethod initialize-instance :after ((w wide-toplevel-apprentice)
                                        &key ignore-line-regexp)
@@ -87,6 +96,12 @@
          :initform nil))
   (:documentation ""))
 
+(defun copy-toplevel-line (toplevel-line)
+  (make-instance 'toplevel-line
+    :file (file toplevel-line)
+    :line-number (line-number toplevel-line)
+    :line (line toplevel-line)))
+
 (defmethod toplevel-line-button (apprentice line)
   (put-elisp-button-here
    apprentice (line line) nil
@@ -95,6 +110,17 @@
                     (namestring (file line)))
    :face :unspecified
    :skippable t))
+
+(defun extract-toplevel-name (toplevel-line)
+  (multiple-value-bind (match sub)
+      (cl-ppcre:scan-to-strings
+       "^\\(\\w+ ([^()]+?)[ \\n]" ; Investigate: (\\w+?) doesn't work
+       toplevel-line)
+    (declare (ignore match))
+    (when sub
+      (aref sub 0))))
+
+;; (extract-toplevel-name "(defun Asdasdfoo asdasd")
 
 ;; Scans the files and returns a list of toplevel-line instancs.
 ;; Should not put buttons.
@@ -134,6 +160,24 @@
         (if (sort-lines-p ap)
             (sort lines #'string< :key #'line)
             lines)))))
+
+(defmethod button-pressed ((apprentice wide-toplevel-apprentice)
+                           (name (eql 'display)))
+  (setf (line-display-mode apprentice)
+        (alexandria:rotate (line-display-mode apprentice) -1))
+  (emacs-message
+   (case (car (line-display-mode apprentice))
+     (:normal "Lines")
+     (:names "Present symbols")
+     (:uninterned "Present symbols as uninterned"))))
+
+(defmethod button-pressed ((apprentice wide-toplevel-apprentice)
+                           (name (eql 'export)))
+  (export (symbols apprentice) *package*)
+  (emacs-message
+   (format nil "Exported ~A symbols from ~A."
+           (length (symbols apprentice))
+           *package*)))
 
 (defmethod describe-with-apprentice ((ap wide-toplevel-apprentice)
                                      object
@@ -175,9 +219,56 @@
      '(setf (sort-lines-p *button-apprentice*)
        (not (sort-lines-p *button-apprentice*)))
      :redisplay t)
+    (princ " ")
+    ;; Todo: show only present symbols
+    (put-lisp-button-here
+     ap
+     "[DISP]"
+     '(button-pressed *button-apprentice* 'display)
+     :redisplay t)
+    (when (member (car (line-display-mode ap))
+                  '(:names :uninterned))
+      (princ " ")
+      (put-lisp-button-here
+       ap
+       "[EXPORT]"
+       '(button-pressed *button-apprentice* 'export)))
     (terpri)
     (terpri)
+    ;; Display
     (let ((begin (file-position *standard-output*)))
+      (setf (symbols ap) nil) ; for export
+      (flet ((presentp (line)
+               (alexandria:when-let*
+                   ((name (extract-toplevel-name
+                           (line line)))
+                    (uppercase (string-upcase name))
+                    (present (symbol-present-p uppercase)))
+                 (push (find-symbol uppercase) (symbols ap))
+                 name)))
+        (cond ((eq :names (car (line-display-mode ap)))
+               (setf lines (mapcar #'copy-toplevel-line lines))
+               (dolist (line lines)
+                 (setf (line line) (presentp line))))
+              ((eq :uninterned (car (line-display-mode ap)))
+               (setf lines (mapcar #'copy-toplevel-line lines))
+               (dolist (line lines)
+                 (setf (line line)
+                       (alexandria:when-let*
+                           ((name (presentp line)))
+                         (concatenate 'string "#:" name)))))))
+      ;; line-display-mode may have resulted in NIL lines
+      (when (not (eq :normal (car (line-display-mode ap))))
+        (setf lines (remove-if (lambda (x) (null (line x)))
+                               lines))
+        ;; Use slime-current-package instead?
+        (unless lines
+          (format t "No present symbols. Remember to synchronize *PACKAGE*.~%"))
+        (when (sort-lines-p ap)
+          ;; Todo: use loop here, since the list is sorted.
+          (setf lines (remove-duplicates
+                       lines :key #'line
+                             :test #'string=))))
       (loop :with last-file
             :with sort = (sort-lines-p ap)
             :for line :in lines
