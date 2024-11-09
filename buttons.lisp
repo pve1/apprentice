@@ -1,5 +1,4 @@
 ;;;; Requires
-;;;;   trivial-garbage
 ;;;;   "apprentice"
 
 (in-package :apprentice) cx
@@ -76,8 +75,8 @@
                                  (offset 0)
                                  face
                                  redisplay
-                                 name
-                                 arguments
+                                 name      ; only for elisp
+                                 arguments ; only for elisp
                                  skippable)
   (let ((here (file-position stream))
         (there)
@@ -110,11 +109,14 @@
                                       name
                                       arguments
                                       skippable)
+  (unless when-clicked
+    (setf when-clicked
+          `(button-pressed *button-apprentice* ,label)))
   (put-button-here apprentice
                    'lisp-button
                    label
-                   (make-button-callback-form apprentice
-                                              when-clicked)
+                   (make-button-callback-form
+                    apprentice when-clicked)
                    :face face
                    :offset offset
                    :stream stream
@@ -144,13 +146,34 @@
                    :arguments arguments
                    :skippable skippable))
 
-(defmethod create-ephemeral-elisp-function (apprentice symbol lambda-form)
+(defmethod Create-ephemeral-elisp-function (apprentice symbol lambda-form)
   (push-description-property
    (list 'ephemeral-function
               :name symbol
               :lambda-string (swank::process-form-for-emacs
                               lambda-form))))
 
-(defun emacs-message (object)
+(defun Emacs-message (object)
   (swank:eval-in-emacs `(message ,(princ-to-string object))))
 
+(defgeneric Buttons (apprentice)
+  (:documentation "Returns the buttons of an apprentice."))
+
+(defgeneric Find-button (apprentice button-name)
+  (:method (apprentice button-name)
+    (let ((buttons (buttons apprentice)))
+      (typecase buttons
+        (list (cdr (assoc button-name buttons
+                          :test #'equal)))
+        (hash-table (gethash button-name buttons)))))
+  (:documentation ""))
+
+(defgeneric Button-pressed (apprentice button)
+  (:method (apprentice (button-name string))
+    (alexandria:if-let ((button (find-button apprentice
+                                             button-name)))
+      (button-pressed apprentice button)
+      (error "No button named ~S." button-name)))
+  (:method (apprentice (button function))
+    (funcall button apprentice))
+  (:documentation ""))
