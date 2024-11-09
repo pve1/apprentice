@@ -45,7 +45,14 @@
 ;; - enclosing-form
 ;; - toplevel-form
 
-(defvar apprentice-provide-context '())
+;; Reasonable default
+(defvar apprentice-provide-context '(filename
+                                     point
+                                     column
+                                     line
+                                     region
+                                     package
+                                     locked))
 
 (defvar-local apprentice-input nil)
 (defvar-local apprentice-buffer-context nil)
