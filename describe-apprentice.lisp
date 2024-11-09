@@ -178,7 +178,6 @@
                                    (length
                                     (describe-export-some-gfs
                                      ',object))))
-           :redisplay t
            :stream stream)
           (space)
           ;; Remove class
