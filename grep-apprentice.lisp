@@ -29,16 +29,24 @@
                 (incf count))
           :finally (return count))))
 
-(defun grep-apprentice-walk-lisp-files (fn directory)
-  (let ((files (uiop:directory* (merge-pathnames "*.*"
-                                                 directory))))
-    (dolist (file files)
-      (if (uiop:directory-pathname-p file)
-          (let ((name (first (last (rest (pathname-directory file))))))
-            (unless (alexandria:starts-with-subseq "." name)
-              (grep-apprentice-walk-lisp-files fn file)))
-          (when (equal "lisp" (pathname-type file))
-            (funcall fn file))))))
+(defun grep-apprentice-walk-lisp-files (fn directory &key recursive)
+  (if recursive
+      (let ((files (uiop:directory* (merge-pathnames "*.*"
+                                                     directory))))
+        (dolist (file files)
+          (if (uiop:directory-pathname-p file)
+              (let ((name (first (last (rest (pathname-directory file))))))
+                (unless (alexandria:starts-with-subseq "." name)
+                  (grep-apprentice-walk-lisp-files
+                   fn file :recursive recursive)))
+              (when (equal "lisp" (pathname-type file))
+                (funcall fn file)))))
+      (let ((files (uiop:directory* (merge-pathnames "*.lisp"
+                                                     directory))))
+        (dolist (file files)
+          (unless (uiop:directory-pathname-p file)
+            (when (equal "lisp" (pathname-type file))
+              (funcall fn file)))))))
 
 (defmethod apprentice-description-heading ((ap grep-apprentice))
   "Mentions: ")
@@ -101,7 +109,8 @@
              (lambda (x) (push x files))
              (or (path apprentice)
                  buffer-context-filename
-                 "."))
+                 ".")
+             :recursive t)
             (setf files (directory
                          (if buffer-context-filename
                              (merge-pathnames
