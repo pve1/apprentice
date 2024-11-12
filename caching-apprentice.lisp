@@ -23,53 +23,55 @@
                 :accessor busy-result
                 :initform " ... ")))
 
-(defmethod apprentice-same-input-as-last-time-p (object input)
-  (equal (last-input object) input))
+(defmethod apprentice-same-input-as-last-time-p (apprentice
+                                                 input)
+  (equal (last-input apprentice) input))
 
-(defmethod apprentice-same-input-as-last-time-p (object (input symbol))
-  (and (symbolp (last-input object))
-       (equal (symbol-name (last-input object))
+(defmethod apprentice-same-input-as-last-time-p (apprentice
+                                                 (input symbol))
+  (and (symbolp (last-input apprentice))
+       (equal (symbol-name (last-input apprentice))
               (symbol-name input))))
 
-(defmethod apprentice-need-update-p (object input)
-  (if (<= (update-interval object)
+(defmethod apprentice-need-update-p (apprentice input)
+  (if (<= (update-interval apprentice)
           (- (get-universal-time)
-             (last-updated object)))
+             (last-updated apprentice)))
       t
-      (if (apprentice-same-input-as-last-time-p object input)
+      (if (apprentice-same-input-as-last-time-p apprentice input)
           nil
           t)))
 
-(defmethod apprentice-can-update-p (object input)
-  (<= (update-interval object)
+(defmethod apprentice-can-update-p (apprentice input)
+  (<= (update-interval apprentice)
       (- (get-universal-time)
-         (last-updated object))))
+         (last-updated apprentice))))
 
-(defmethod apprentice-mark-updated (object input)
-  (setf (last-updated object) (get-universal-time)
-        (last-input object) input))
+(defmethod apprentice-mark-updated (apprentice input)
+  (setf (last-updated apprentice) (get-universal-time)
+        (last-input apprentice) input))
 
-(defmethod apprentice-cache-results (object input result)
-  (setf (last-result object) result))
+(defmethod apprentice-cache-results (apprentice input result)
+  (setf (last-result apprentice) result))
 
-(defgeneric Apprentice-update (object input)
+(defgeneric Apprentice-update (apprentice input)
   (:documentation ""))
 
-(defmethod apprentice-update (object input)
+(defmethod apprentice-update (apprentice input)
   "")
 
-(defmethod apprentice-update-maybe (object input)
-  (let ((can (apprentice-can-update-p object input))
-        (need (apprentice-need-update-p object input)))
+(defmethod apprentice-update-maybe (apprentice input)
+  (let ((can (apprentice-can-update-p apprentice input))
+        (need (apprentice-need-update-p apprentice input)))
     (cond ((and can need)
            (prog1 (apprentice-cache-results
-                   object input
-                   (apprentice-update object input))
-             (apprentice-mark-updated object input)))
+                   apprentice input
+                   (apprentice-update apprentice input))
+             (apprentice-mark-updated apprentice input)))
           ((and need (not can))
-           (busy-result object))
+           (busy-result apprentice))
           ((not need)
-           (last-result object)))))
+           (last-result apprentice)))))
 
 (defmethod describe-with-apprentice ((ap caching-apprentice)
                                      object
