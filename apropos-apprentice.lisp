@@ -40,6 +40,10 @@
           (lambda (x)
             (< (length (symbol-name x)) min-length)))))
 
+(defmethod eclector.reader:evaluate-expression ((client (eql 'collect-packages))
+                                                expression)
+  expression)
+
 (defmethod eclector.reader:interpret-symbol ((client (eql 'collect-packages))
                                              input-stream
                                              package-indicator
