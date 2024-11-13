@@ -3,7 +3,17 @@
 (in-package :apprentice) cx
 
 (defun symbol-status (symbol-designator &optional (package *package*))
-  (nth-value 1 (find-symbol (string symbol-designator) package)))
+  (typecase symbol-designator
+    ;; Also keyword
+    (symbol (multiple-value-bind (symbol status)
+                (find-symbol (string symbol-designator)
+                             package)
+              (if (eq symbol symbol-designator)
+                  status
+                  nil)))
+    (string (nth-value 1 (find-symbol
+                          (string symbol-designator)
+                          package)))))
 
 (defun symbol-home-package-p (symbol &optional (package *package*))
   (eq package (symbol-package symbol)))
