@@ -34,3 +34,6 @@
 (defun symbol-inherited-p (symbol-designator &optional (package *package*))
   (let ((status (symbol-status symbol-designator package)))
     (eq status :inherited)))
+
+(defun symbol-uninterned-p (symbol)
+  (null (symbol-package symbol)))
