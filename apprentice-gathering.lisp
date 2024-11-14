@@ -36,13 +36,11 @@
       (print-divider-maybe))))
 
 (defun instantiate-maybe (thing)
-  (cond ((null thing)
-         thing)
-        ((keywordp thing)
-         thing)
-        ((symbolp thing)
-         (make-instance thing))
-        (t thing)))
+  (typecase thing
+    (null thing)
+    (keyword thing)
+    (symbol (make-instance thing))
+    (t thing)))
 
 (defmethod initialize-instance :after ((a apprentice-gathering)
                                        &key apprentices)
