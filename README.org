@@ -14,7 +14,15 @@
 (define-key lisp-mode-map (kbd "C-c Z") (quote apprentice-describe-form))
 #+end_src
 
-- Open a lisp buffer and press ~C-c z~.
+- Open a lisp buffer and press ~C-c z~ to bring up the apprentice
+  buffer.
+  - Move the point around to see what it does.
+  - Try typing something at the toplevel to see some
+    suggestions. Location matters, e.g. at the beginning of a buffer
+    it will suggest a defpackage form. When creating slots for a
+    class, it will show slot-related suggestions.
+  - Things highlighted colors in the apprentice buffer are clickable
+    with RET.
 - NOTE: ~apprentice-describe-form~ will repeatedly evaluate the form
   behind the point, so don't use it on (delete-file ...) or other
   dangerous forms. Try it on ~(random 10)~ to get an idea.
