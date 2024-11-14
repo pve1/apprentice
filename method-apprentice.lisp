@@ -1,4 +1,5 @@
 ;;;; Requires
+;;;;   closer-mop
 ;;;;   "apprentice"
 ;;;;   "buttons"
 
