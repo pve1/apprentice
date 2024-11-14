@@ -61,8 +61,6 @@
           (query-replace ,from ,to))
         t))))
 
-;; Note: Replace won't work on files that haven't been opened by
-;; emacs.
 (defmethod grep-apprentice-insert-replace-button (ap from files
                                                   &key offset)
   (put-elisp-button-here
@@ -72,7 +70,7 @@
           (files ',(reverse (mapcar #'namestring files)))
           (orig-buf (current-buffer)))
       (dolist (file ',(reverse (mapcar #'namestring files)))
-        (let ((buf (get-file-buffer file)))
+        (let ((buf (find-file-noselect file)))
           (when buf
             (switch-to-buffer buf)
             (unwind-protect
