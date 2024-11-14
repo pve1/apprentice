@@ -1,11 +1,20 @@
 
-* Apprentice mode
+* Apprentice Mode Quickstart
+
+- Download and install the dependencies
+  - https://github.com/pve1/extensible-inferred-system
+  - https://github.com/pve1/capitalized-export
 
 - Load ~apprentice.el~ in Emacs.
-- Load the ~apprentice~ system in Lisp.
-- Set ~apprentice:*apprentice*~ to something suitable.
+- Load the ~apprentice/example-apprentice~ system in Lisp.
+- Bind the following keys:
 
-Then, in a lisp buffer do:
+#+begin_src emacs-lisp
+(define-key lisp-mode-map (kbd "C-c z") (quote apprentice-describe))
+(define-key lisp-mode-map (kbd "C-c Z") (quote apprentice-describe-form))
+#+end_src
 
-~M-x apprentice-describe~
-
+- Open a lisp buffer and press ~C-c z~.
+- NOTE: ~apprentice-describe-form~ will repeatedly evaluate the form
+  behind the point, so don't use it on (delete-file ...) or other
+  dangerous forms. Try it on ~(random 10)~ to get an idea.
