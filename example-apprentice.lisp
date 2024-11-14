@@ -1,6 +1,6 @@
 ;;;; Requires
-;;;;   apprentice
 ;;;;   closer-mop
+;;;;   "apprentice"
 ;;;;   "apprentice-gathering"
 ;;;;   "apropos-apprentice"
 ;;;;   "grep-apprentice"
@@ -115,4 +115,3 @@
                     t)))))))
 
 (setf *apprentice* (make-example-apprentice))
-
