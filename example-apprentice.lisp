@@ -13,18 +13,30 @@
 
 (in-package :apprentice)
 
-(defclass example-apprentice (apprentice-gathering)
-  ((toplevel :initarg :toplevel
-             :accessor toplevel
-             :initform nil)
-   (state :initarg :state
-          :accessor state
-          :initform nil)))
+(defclass Example-apprentice (apprentice-gathering)
+  ((toplevel-apprentices
+    :initarg :toplevel-apprentices
+    :accessor toplevel-apprentices
+    :initform nil))
+  (:documentation ""))
 
-(defmethod apprentices ((ap example-apprentice))
-  (if (eq (state ap) 'toplevel)
-      (toplevel ap)
-      (call-next-method)))
+(defmethod initialize-instance :after ((e example-apprentice)
+                                       &key toplevel-apprentices)
+  (setf (toplevel-apprentices e)
+        (mapcar 'instantiate-maybe toplevel-apprentices)))
+
+(defmethod apprentices-based-on-input ((ap example-apprentice)
+                                       (input looking-at-character))
+  (toplevel-apprentices ap))
+
+(defun example-apprentice-reload (object stream)
+  (declare (ignore object))
+  (princ "                         " stream)
+  (put-lisp-button-here
+   *apprentice*
+   "[RELOAD]"
+   '(asdf:load-system "apprentice/example-apprentice" :force t)
+   :stream stream))
 
 (defun example-describe-package-maybe (object stream)
   (when (and (or (keywordp object)
@@ -42,11 +54,11 @@
       (princ " ")
       (put-lisp-button-here *apprentice*
                             "[CLREXT]"
-                            `(loop :with pkg = (find-package ',object)
-                                   :for sym :being
-                                   :each :external-symbol
-                                   :in pkg
-                                   :do (unexport sym pkg))
+                            `(let ((pkg (find-package ',object))
+                                   (ext '()))
+                               (do-external-symbols (sym pkg)
+                                 (push sym ext))
+                               (unexport ext pkg))
                             :redisplay t)
       (princ " ")
       (put-lisp-button-here *apprentice*
@@ -68,60 +80,33 @@
                     #'string<))
       t)))
 
-(defun example-method-description (method)
-  (format nil "~S (~{~S~^ ~})"
-          (closer-mop:generic-function-name
-           (closer-mop:method-generic-function method))
-          (mapcar (lambda (spec)
-                    (if (typep spec 'class)
-                        (class-name spec)
-                        (list 'eql
-                              (closer-mop:eql-specializer-object spec))))
-                  (closer-mop:method-specializers
-                   method))))
+(defun Make-example-apprentice ()
+  (let* ((*caching-apprentice-default-update-interval* 2)
+         (activity-apprentice (make-instance 'activity-apprentice
+                                :history-length 5
+                                :proximity-cutoff 60)))
+    (make-instance 'example-apprentice
+      :toplevel-apprentices
+      (list 'suggest-apprentice
+            activity-apprentice
+            'wide-toplevel-apprentice
+            #'example-apprentice-reload)
+      :apprentices
+      (list 'suggest-apprentice
+            activity-apprentice
+            'describe-apprentice
+            #'example-describe-package-maybe
+            'value-apprentice
+            'grep-apprentice
+            (make-instance 'apropos-apprentice
+              :min-length 2
+              :interesting-symbol-function
+              (lambda (sym)
+                ;; Ignore mixed case symbols.
+                (if (eq (symbol-package sym) *package*)
+                    (not (find-if #'lower-case-p
+                                  (symbol-name sym)))
+                    t)))))))
 
-(defun example-describe-class-maybe (object stream)
-  (when (and (symbolp object)
-             (not (eq t object))
-             (find-class object nil))
-    (let* ((*standard-output* stream)
-           (class (find-class object))
-           (methods (closer-mop:specializer-direct-methods
-                     class))
-           (descriptions
-             (sort (mapcar 'example-method-description methods)
-                   #'string<)))
-      (when methods
-        (format t "Methods related to the class ~A:~2%" object)
-        (format t "~{~A~^~%~}" descriptions)
-        t))))
-
-(defmethod describe-with-apprentice ((ap example-apprentice)
-                                     (c looking-at-character)
-                                     stream)
-  (setf (state ap) 'toplevel)
-  (unwind-protect (call-next-method)
-    (setf (state ap) nil)))
-
-(let ((*caching-apprentice-default-update-interval* 1))
-  (setf *apprentice*
-        (make-instance 'example-apprentice
-          :toplevel (list (make-instance 'suggest-apprentice)
-                          (make-instance 'wide-toplevel-apprentice))
-          :apprentices
-          (list
-           'suggest-apprentice
-           'describe-apprentice
-           #'example-describe-package-maybe
-           'value-apprentice
-           'grep-apprentice
-           (make-instance 'apropos-apprentice
-             :min-length 2
-             :interesting-symbol-function
-             (lambda (sym)
-               ;; Ignore mixed case symbols.
-               (if (eq (symbol-package sym) *package*)
-                   (not (find-if #'lower-case-p (symbol-name sym)))
-                   t)))
-           #'example-describe-class-maybe))))
+(setf *apprentice* (make-example-apprentice))
 
