@@ -238,6 +238,7 @@
 
 (defun Form-description (form-string &optional package-designator)
   (check-type form-string string)
+  (assert (null *description-properties*))
   (return-description
    (list form-string package-designator)
    (describe-form-with-apprentice *apprentice*
