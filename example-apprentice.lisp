@@ -29,6 +29,7 @@
                                        (input looking-at-character))
   (toplevel-apprentices ap))
 
+;; Ad-hoc apprentice to reload this file.
 (defun example-apprentice-reload (object stream)
   (declare (ignore object))
   (princ "                         " stream)
@@ -38,6 +39,8 @@
    '(asdf:load-system "apprentice/example-apprentice" :force t)
    :stream stream))
 
+;; Ad-hoc apprentice to describe packages when the point on a keyword
+;; or an uninterned symbol.
 (defun example-describe-package-maybe (object stream)
   (when (and (or (keywordp object)
                  (and (symbolp object)
@@ -80,6 +83,9 @@
                     #'string<))
       t)))
 
+;; This is a good starting point for creating your own
+;; apprentice. Just copy and modify according to taste, then assign
+;; the resulting instance to *apprentice*.
 (defun Make-example-apprentice ()
   (let* ((*caching-apprentice-default-update-interval* 2)
          (activity-apprentice (make-instance 'activity-apprentice
