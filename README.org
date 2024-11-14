@@ -21,7 +21,7 @@
     suggestions. Location matters, e.g. at the beginning of a buffer
     it will suggest a defpackage form. When creating slots for a
     class, it will show slot-related suggestions.
-  - Things highlighted colors in the apprentice buffer are clickable
+  - Things highlighted with colors in the apprentice buffer are clickable
     with RET.
 - NOTE: ~apprentice-describe-form~ will repeatedly evaluate the form
   behind the point, so don't use it on (delete-file ...) or other
