@@ -11,7 +11,7 @@
 ;;;;   "suggest-apprentice"
 ;;;;   "buttons"
 
-(in-package :apprentice)
+(in-package :apprentice) cx
 
 (defclass Example-apprentice (apprentice-gathering)
   ((toplevel-apprentices
