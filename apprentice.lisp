@@ -275,3 +275,40 @@
                               (aref preceding-char 0)))
           s))))))
 
+;; Use M-x list-faces-display to see available faces.
+
+;; (with-face ("font-lock-keyword-face")
+;;   (princ "Hello"))
+;; (with-face ('(:foreground "Royal Blue"))
+;;   (princ "World!"))
+
+(defmacro With-face ((face
+                      &optional
+                      (stream '*standard-output*)
+                      (offset 0))
+                     &body body)
+  (alexandria:with-gensyms (begin)
+    `(let ((,begin (+ ,offset (file-position ,stream))))
+       (prog1 (progn ,@body)
+         (push-description-property
+          (list 'add-face
+                ,begin
+                (+ ,offset (file-position ,stream))
+                ,face))))))
+
+;; Use M-x list-colors-display to see available colors.
+
+;; (with-foreground-color ("Dark Orchid")
+;;   (princ "abc"))
+;; (with-foreground-color ("#8810ff")
+;;   (princ "def"))
+;; (with-foreground-color ("#ffff1c710000")
+;;   (princ "ghi"))
+
+(defmacro With-foreground-color ((color
+                                  &optional
+                                  (stream '*standard-output*)
+                                  (offset 0))
+                                 &body body)
+  `(with-face ('(:foreground ,color) ,stream ,offset)
+     ,@body))

@@ -12,17 +12,6 @@
 (defmethod Apprentice-gathering-divider (apprentice)
   "-------------------------------------------------------------")
 
-(defmacro with-face ((face &optional (stream '*standard-output*))
-                     &body body)
-  (alexandria:with-gensyms (begin)
-    `(let ((,begin (file-position ,stream)))
-       (prog1 (progn ,@body)
-         (push-description-property
-          (list 'add-face
-                     ,begin
-                     (file-position stream)
-                     ,face))))))
-
 (defmethod describe-with-apprentice ((ap apprentice-gathering)
                                      object
                                      stream)
