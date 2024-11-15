@@ -10,8 +10,8 @@
 - Bind the following keys:
 
 #+begin_src emacs-lisp
-(define-key lisp-mode-map (kbd "C-c z") (quote apprentice-describe))
-(define-key lisp-mode-map (kbd "C-c Z") (quote apprentice-describe-form))
+(define-key lisp-mode-map (kbd "C-c z") 'apprentice-describe)
+(define-key lisp-mode-map (kbd "C-c Z") 'apprentice-describe-form)
 #+end_src
 
 - Open a lisp buffer and press ~C-c z~ to bring up the apprentice
