@@ -6,7 +6,7 @@
 
 (defclass Apprentice-gathering ()
   ((apprentices :initarg :apprentices
-                :accessor apprentices
+                :accessor Apprentices
                 :initform nil)))
 
 (defmethod Apprentice-gathering-divider (apprentice)

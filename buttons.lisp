@@ -101,7 +101,7 @@
                   :arguments arguments
                   :skippable skippable))))
 
-(defmethod put-lisp-button-here (apprentice label when-clicked
+(defmethod Put-lisp-button-here (apprentice label when-clicked
                                  &key (stream *standard-output*)
                                       (offset 0)
                                       face
@@ -126,7 +126,7 @@
                    :skippable skippable))
 
 ;; Fixme: Depends on internal swank function.
-(defmethod put-elisp-button-here (apprentice label when-clicked
+(defmethod Put-elisp-button-here (apprentice label when-clicked
                                   &key (stream *standard-output*)
                                        (offset 0)
                                        face

@@ -16,7 +16,7 @@
 (defclass Example-apprentice (apprentice-gathering)
   ((toplevel-apprentices
     :initarg :toplevel-apprentices
-    :accessor toplevel-apprentices
+    :accessor Toplevel-apprentices
     :initform nil))
   (:documentation ""))
 

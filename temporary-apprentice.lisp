@@ -3,15 +3,15 @@
 
 (in-package :apprentice) cx
 
-(defclass temporary-apprentice ()
+(defclass Temporary-apprentice ()
   ((original-apprentice :initarg :original-apprentice
-                        :accessor original-apprentice
+                        :accessor Original-apprentice
                         :initform *apprentice*)
    (describe-function :initarg :describe-function
-                      :accessor describe-function
+                      :accessor Describe-function
                       :initform nil)
    (done :initarg :done
-         :accessor done
+         :accessor Done
          :initform t)))
 
 (defmethod describe-with-apprentice ((ap temporary-apprentice)
@@ -25,7 +25,7 @@
     (when (done ap)
       (setf *apprentice* (original-apprentice ap)))))
 
-(defun set-temporary-apprentice (apprentice &optional describe-function)
+(defun Set-temporary-apprentice (apprentice &optional describe-function)
   (when (and apprentice (symbolp apprentice))
     (setf apprentice (make-instance apprentice)))
   (setf *apprentice*

@@ -14,7 +14,7 @@
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
 (defvar *description-properties* nil)
-(defvar *before-describe-hook* nil)
+(defvar *Before-describe-hook* nil)
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:method (apprentice object stream)
@@ -29,7 +29,8 @@
   (:method ((apprentice function) object stream)
     (funcall apprentice object stream)))
 
-(defgeneric Describe-tagged-list (apprentice tag plist stream)
+;; May get removed
+(defgeneric describe-tagged-list (apprentice tag plist stream)
   (:method (apprentice tag plist stream)
     nil))
 
@@ -49,7 +50,7 @@
               *previous-description* desc))
       :max-size-exceeded))
 
-(defun buffer-context-property (property)
+(defun Buffer-context-property (property)
   (getf *buffer-context* property))
 
 (defun run-hook (hook)
@@ -245,12 +246,12 @@
                                   form-string
                                   package-designator)))
 
-(defclass looking-at-character ()
+(defclass Looking-at-character ()
   ((preceding-char :initarg :preceding-char
-                   :accessor preceding-char
+                   :accessor Preceding-char
                    :initform nil)
    (following-char :initarg :following-char
-                   :accessor following-char
+                   :accessor Following-char
                    :initform nil)))
 
 (defmethod print-object ((l looking-at-character) stream)

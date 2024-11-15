@@ -11,20 +11,20 @@
 (defclass Suggest-apprentice ()
   ())
 
-(defclass suggestion ()
+(defclass Suggestion ()
   ((string :initarg :string
-           :accessor suggestion-string
+           :accessor Suggestion-string
            :initform nil)
    (label :initarg :label
-          :accessor suggestion-label
+          :accessor Suggestion-label
           :initform nil)
    (pre-insert-elisp-form
     :initarg :pre-insert-elisp-form
-    :accessor pre-insert-elisp-form
+    :accessor Pre-insert-elisp-form
     :initform nil)
    (post-insert-elisp-form
     :initarg :post-insert-elisp-form
-    :accessor post-insert-elisp-form
+    :accessor Post-insert-elisp-form
     :initform nil))
   (:documentation ""))
 
@@ -34,7 +34,7 @@
 (defmethod suggestion-label (object)
   nil)
 
-(defmethod apprentice-create-ephemerals (apprentice)
+(defmethod Apprentice-create-ephemerals (apprentice)
   (create-ephemeral-elisp-function
    apprentice 'insert-toplevel-suggestion
    '(lambda (file
@@ -110,7 +110,7 @@
       t)))
 
 ;;; Helpers
-(defmethod suggest-get-class-accessors (ap (class-name symbol)
+(defmethod Suggest-get-class-accessors (ap (class-name symbol)
                                         &key (package (symbol-package
                                                        class-name)))
   (let ((class (find-class class-name nil))
@@ -131,7 +131,7 @@
                   (push sym generic-functions)))
       generic-functions)))
 
-(defmethod suggest-with-accessors-spec (ap class-name)
+(defmethod Suggest-with-accessors-spec (ap class-name)
   (let ((accessors (suggest-get-class-accessors ap class-name))
         (name (string-downcase class-name)))
     (mapcar
@@ -148,19 +148,19 @@
                  acc)))
      accessors)))
 
-(defmethod suggest-get-class-slots (ap (class-name symbol))
+(defmethod Suggest-get-class-slots (ap (class-name symbol))
   (let ((class (find-class class-name nil)))
     (when class
       (mapcar #'closer-mop:slot-definition-name
               (closer-mop:class-direct-slots class)))))
 
-(defmethod suggest-get-current-path (ap)
+(defmethod Suggest-get-current-path (ap)
   (alexandria:when-let ((file (buffer-context-property :filename)))
     (swank:eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
         (apprentice-current-form-path)))))
 
-(defmethod suggest-get-toplevel-name (ap)
+(defmethod Suggest-get-toplevel-name (ap)
   (alexandria:when-let ((file (buffer-context-property :filename)))
     (swank:eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
@@ -236,7 +236,7 @@
 (defun format-suggestion (string)
   (format-suggestion-chomp-trim-right string))
 
-(defgeneric generate-suggestions (ap object path)
+(defgeneric Generate-suggestions (ap object path)
   (:method (ap object path)
     nil)
   (:documentation ""))

@@ -11,10 +11,10 @@
 
 (defclass Grep-apprentice (caching-apprentice)
   ((path :initarg :path
-         :accessor path
+         :accessor Path
          :initform nil)
    (recursive :initarg :recursive
-              :accessor recursive
+              :accessor Recursive
               :initform nil)
    (busy-result :initarg :busy-result
                 :accessor busy-result
@@ -48,10 +48,10 @@
             (when (equal "lisp" (pathname-type file))
               (funcall fn file)))))))
 
-(defmethod apprentice-description-heading ((ap grep-apprentice))
+(defmethod Apprentice-description-heading ((ap grep-apprentice))
   "Mentions: ")
 
-(defmethod grep-apprentice-query-replace (ap file from to)
+(defmethod Grep-apprentice-query-replace (ap file from to)
   (swank:eval-in-emacs
    `(let ((buf (get-file-buffer ,file)))
       (when buf
@@ -61,7 +61,7 @@
           (query-replace ,from ,to))
         t))))
 
-(defmethod grep-apprentice-insert-replace-button (ap from files
+(defmethod Grep-apprentice-insert-replace-button (ap from files
                                                   &key offset)
   (put-elisp-button-here
    ap "[REPLACE]"
