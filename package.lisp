@@ -3,7 +3,7 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package :apprentice)
-    (make-package :apprentice :use '(cl))))
+    (make-package :apprentice :use '(:cl))))
 
 (in-package :apprentice)
 
