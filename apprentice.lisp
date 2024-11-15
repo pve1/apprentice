@@ -13,7 +13,7 @@
 (defvar *Description-stream* nil)
 (defvar *previous-object* nil)
 (defvar *previous-description* nil)
-(defvar *description-properties* nil)
+(defvar *description-properties*)
 (defvar *Before-describe-hook* nil)
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
@@ -43,7 +43,8 @@
                       (equal *previous-description* desc)
                       (not *force-return-description*))
                  :unchanged
-                 (if *description-properties*
+                 (if (and (boundp '*description-properties*)
+                          (not (null *description-properties*)))
                      (list desc *description-properties*)
                      desc))
         (setf *previous-object* object
@@ -239,7 +240,7 @@
 
 (defun Form-description (form-string &optional package-designator)
   (check-type form-string string)
-  (assert (null *description-properties*))
+  (assert (null (boundp '*description-properties*)))
   (return-description
    (list form-string package-designator)
    (describe-form-with-apprentice *apprentice*
