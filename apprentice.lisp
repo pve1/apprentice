@@ -76,7 +76,8 @@
       (push property *description-properties*)))
 
 (defun Presentation-description (presentation-id)
-  (let* ((desc (with-output-to-string (s)
+  (let* ((*description-properties* nil)
+         (desc (with-output-to-string (s)
                  (run-hook *before-describe-hook*)
                  (describe-with-apprentice
                   *apprentice*
