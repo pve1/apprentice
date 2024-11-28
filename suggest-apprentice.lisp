@@ -74,36 +74,39 @@
       (terpri)
       (when *debug-suggestions*
         (format *debug-io* "~&################################~%"))
-      (dolist (suggestion suggestions)
-        (when *debug-suggestions*
-          (format *debug-io* "~&~A~%--------------------------------"
-                  (suggestion-string suggestion)))
-        (put-elisp-button-here
-         ap (or (suggestion-label suggestion)
-                (suggestion-string suggestion))
-         nil
-         :name 'insert-toplevel-suggestion
-         :arguments (list (buffer-context-property :filename)
-                          (suggestion-string suggestion)
-                          (etypecase suggestion
-                            (string nil)
-                            (suggestion
-                             (alexandria:when-let
-                                 ((pre (pre-insert-elisp-form
-                                        suggestion)))
-                               (swank::process-form-for-emacs pre))))
-                          (etypecase suggestion
-                            (string nil)
-                            (suggestion
-                             (alexandria:when-let
-                                 ((post (post-insert-elisp-form
-                                         suggestion)))
-                               (swank::process-form-for-emacs post)))))
-         :face (when (suggestion-string suggestion)
-                 :unspecified))
-        (unless (alexandria:ends-with (suggestion-string suggestion)
-                                      #\newline)
-          (terpri)))
+      (let ((mini-separators (length suggestions)))
+        (dolist (suggestion suggestions)
+          (when *debug-suggestions*
+            (format *debug-io* "~&~A~%--------------------------------"
+                    (suggestion-string suggestion)))
+          (put-elisp-button-here
+           ap (or (suggestion-label suggestion)
+                  (suggestion-string suggestion))
+           nil
+           :name 'insert-toplevel-suggestion
+           :arguments (list (buffer-context-property :filename)
+                            (suggestion-string suggestion)
+                            (etypecase suggestion
+                              (string nil)
+                              (suggestion
+                               (alexandria:when-let
+                                   ((pre (pre-insert-elisp-form
+                                          suggestion)))
+                                 (swank::process-form-for-emacs pre))))
+                            (etypecase suggestion
+                              (string nil)
+                              (suggestion
+                               (alexandria:when-let
+                                   ((post (post-insert-elisp-form
+                                           suggestion)))
+                                 (swank::process-form-for-emacs post)))))
+           :face (when (suggestion-string suggestion)
+                   :unspecified))
+          (unless (alexandria:ends-with (suggestion-string suggestion)
+                                        #\newline)
+            (terpri))
+          (unless (< (decf mini-separators) 1)
+            (format t "- - - - - - - - - - - - - - - -~%"))))
       (push-description-property
        `(indent-region ,begin ,(file-position stream))
        :last)
