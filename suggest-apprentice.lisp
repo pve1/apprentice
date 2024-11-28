@@ -476,7 +476,13 @@
                  (typep (fdefinition object)
                         'generic-function))
         (let ((lambda-list
-                (mapcar #'string-downcase
+                (mapcar (lambda (x)
+                          (let ((param (if (consp x)
+                                           (car x)
+                                           x)))
+                            (if (symbolp param)
+                                (string-downcase param)
+                                param)))
                         (closer-mop:generic-function-lambda-list
                          (fdefinition object)))))
           (suggest #?{
