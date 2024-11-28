@@ -532,7 +532,8 @@
                   (apprentice-describe-form)))
               suggestions))
       ;; Empty file
-      (when (and (null (preceding-char object))
+      (when (and file
+                 (null (preceding-char object))
                  (null (following-char object)))
         ;; Package-inferred-system defpackage
         (let ((search-max-tries 3))
