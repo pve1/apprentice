@@ -519,6 +519,28 @@
           (suggest #?{
                    (with-accessors (@(accessors))
                      )})))
+      ;; Loop
+      (when (and (path-ends-with '("loop"))
+                 (eq 'loop object))
+        (let ((post-form `(progn
+                            (save-excursion
+                             (backward-sexp)
+                             (when (looking-back "(")
+                               (backward-delete-char 1))))))
+          (suggest #?{(loop :for key :being :the
+                            :hash-key :of hashtable
+                            :using (:hash-value value))}
+                            :post-insert-elisp-form post-form)
+          (suggest #?{(loop :for value :being :the
+                            :hash-value :of hashtable
+                            :using (:hash-key key))}
+                            :post-insert-elisp-form post-form)
+          (suggest #?{(loop :for symbol :being
+                            :each :symbol
+                            ;; :each :present-symbol
+                            ;; :each :external-symbol
+                            :of package)})
+                            :post-insert-elisp-form post-form))
       (nreverse suggestions))))
 
 ;; Quick 'n' dirty copy-paste from symbol method.
