@@ -236,6 +236,16 @@
 (defun format-suggestion (string)
   (format-suggestion-chomp-trim-right string))
 
+(defun map-tree-sg (predicate fn tree)
+  (cond ((funcall predicate tree)
+         (funcall fn tree))
+        ((atom tree)
+         tree)
+        (t (cons (map-tree-sg predicate fn (car tree))
+                 (if (cdr tree)
+                     (map-tree-sg predicate fn (cdr tree))
+                     nil)))))
+
 (defgeneric Generate-suggestions (ap object path)
   (:method (ap object path)
     nil)
@@ -308,9 +318,10 @@
                    (typep (fdefinition object) 'generic-function))
           (let ((name (string-downcase object))
                 (lambda-list
-                  (mapcar #'string-downcase
-                          (closer-mop:generic-function-lambda-list
-                           (fdefinition object))))
+                  (map-tree-sg #'symbolp
+                               #'string-downcase
+                               (closer-mop:generic-function-lambda-list
+                                (fdefinition object))))
                 (qualifiers (if (eq 'initialize-instance object)
                                 " :after"
                                 "")))
