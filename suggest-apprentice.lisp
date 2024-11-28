@@ -262,7 +262,11 @@
            (and (alexandria:starts-with #\* name)
                 (alexandria:ends-with #\* name)))
          (line (buffer-context-property :line))
-         (toplevel-name))
+         (toplevel-name)
+         (up-list-kill-form
+           `(progn
+              (up-list -1)
+              (kill-sexp))))
     (flet ((suggest (x &key pre-insert-elisp-form
                             post-insert-elisp-form)
              (push (if (or pre-insert-elisp-form
@@ -408,9 +412,7 @@
           (suggest (if exports
                        #?{(:export #:@{exports})}
                        #?{(:export)})
-                   :pre-insert-elisp-form `(progn
-                                             (up-list -1)
-                                             (kill-sexp)))))
+                   :pre-insert-elisp-form up-list-kill-form)))
       ;; Imports
       (when (path-starts-with '("defpackage" ":import-from"))
         (let ((cl-interpol:*list-delimiter* #?"\n")
@@ -433,9 +435,7 @@
                                               #:@{symbols})}))
                     packages)))
             (suggest #?{@{clauses}}
-                     :pre-insert-elisp-form `(progn
-                                               (up-list -1)
-                                               (kill-sexp))))))
+                     :pre-insert-elisp-form up-list-kill-form))))
       ;; Accessors
       (when (and (<= 2 (length path))
                  (path-starts-with '("defclass")))
