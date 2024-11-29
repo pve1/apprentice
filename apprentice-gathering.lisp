@@ -10,7 +10,18 @@
                 :initform nil)))
 
 (defmethod Apprentice-gathering-divider (apprentice)
-  "-------------------------------------------------------------")
+  "--------------------------------------------------------------")
+
+(defun make-divider-with-label (label &optional (width 62))
+  (describe-form-separator label width))
+
+(defun make-divider-with-label-right (label &optional (width 62))
+  (let ((len (length label)))
+    (with-output-to-string (*standard-output*)
+      (dotimes (n (- width len 3))
+        (princ "-"))
+      (princ label)
+      (princ "---"))))
 
 (defmethod Apprentices-based-on-input (apprentice input)
   (apprentices apprentice))
@@ -18,12 +29,18 @@
 (defmethod describe-with-apprentice ((ap apprentice-gathering)
                                      object
                                      stream)
-  (let (divider-printed)
+  (let* ((first-divider (make-divider-with-label
+                         (suggested-current-package-name)))
+         (rest-dividers (apprentice-gathering-divider ap))
+         (divider first-divider)
+         (*standard-output* stream)
+         divider-printed)
     (flet ((print-divider-maybe ()
              (unless divider-printed
                (fresh-line stream)
                (with-face ("apprentice-divider" stream)
-                 (princ (apprentice-gathering-divider ap) stream))
+                 (princ divider stream)
+                 (setf divider rest-dividers))
                (fresh-line stream)
                (setf divider-printed t))))
       (dolist (a (apprentices-based-on-input ap object))
