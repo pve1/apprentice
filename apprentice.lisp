@@ -76,7 +76,8 @@
       (push property *description-properties*)))
 
 (defun Presentation-description (presentation-id)
-  (let* ((*description-properties* nil)
+  (let* ((*package* (suggested-current-package))
+         (*description-properties* nil)
          (desc (with-output-to-string (s)
                  (run-hook *before-describe-hook*)
                  (describe-with-apprentice
@@ -122,6 +123,7 @@
            (let ((sym (make-symbol symbol-name)))
              (setf (get sym 'package-indicator) pkg)
              sym)))
+    ;; We add this the buffer context mainly for apropos-apprentice.
     (setf (getf *buffer-context* 'package-indicator)
           package-indicator)
     (cond ((eq :current package-indicator)
@@ -159,7 +161,8 @@
 
 (defun Symbol-description (symbol-name)
   (check-type symbol-name string)
-  (let* ((symbol (ignore-errors
+  (let* ((*package* (suggested-current-package))
+         (symbol (ignore-errors
                   (resolve-symbol *apprentice* symbol-name)))
          (*description-properties* nil))
     (when symbol
@@ -271,7 +274,8 @@
   l)
 
 (defun Character-description (preceding-char following-char)
-  (let* ((*description-properties* nil))
+  (let* ((*package* (suggested-current-package))
+         (*description-properties* nil))
     (return-description
      (list 'looking-at preceding-char following-char)
      (with-output-to-string (s)
