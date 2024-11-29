@@ -18,6 +18,9 @@
 (defun symbol-home-package-p (symbol &optional (package *package*))
   (eq package (symbol-package symbol)))
 
+(defun symbol-accessible-p (symbol-designator &optional (package *package*))
+  (not (null (symbol-status symbol-designator package))))
+
 (defun symbol-present-p (symbol-designator &optional (package *package*))
   (let ((status (symbol-status symbol-designator package)))
     (or (eq status :internal)
