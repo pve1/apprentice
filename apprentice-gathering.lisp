@@ -18,8 +18,7 @@
 (defun make-divider-with-label-right (label &optional (width 62))
   (let ((len (length label)))
     (with-output-to-string (*standard-output*)
-      (dotimes (n (- width len 3))
-        (princ "-"))
+      (princ (make-string (- width len 3) :initial-element #\-))
       (princ label)
       (princ "---"))))
 
