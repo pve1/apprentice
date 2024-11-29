@@ -139,13 +139,20 @@
                (anonymous-symbol package-indicator)))
           (t (anonymous-symbol package-indicator)))))
 
+(defun suggested-current-package ()
+  (let* ((pkg-string (buffer-context-property :package))
+         (*read-eval* nil)
+         (pkg (when pkg-string
+                (find-package (read-from-string pkg-string)))))
+    (or pkg *package*)))
+
+(defun suggested-current-package-name ()
+  (package-name (suggested-current-package)))
+
 (defgeneric Resolve-symbol (apprentice symbol-name))
 
 (defmethod resolve-symbol (apprentice symbol-name)
-  (let* ((pkg-string (buffer-context-property :package))
-         (pkg (when pkg-string
-                (find-package (read-from-string pkg-string))))
-         (*package* (or pkg *package*)))
+  (let* ((*package* (suggested-current-package)))
     (with-eclector-client 'default-resolve-symbol
       (catch 'symbol
         (eclector.reader:read-from-string symbol-name)))))
