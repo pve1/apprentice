@@ -69,8 +69,8 @@
 
 (defmethod apropos-compute-interesting-symbols ((ap apropos-apprentice)
                                                 (input-symbol symbol))
-  (let* ((package-indicator-2 (getf *buffer-context*
-                                    'package-indicator))
+  (let* ((package-indicator-2
+           (getf *buffer-context* 'package-indicator))
          (other-symbols (make-hash-table))
          (inherited-symbols (make-hash-table))
          (present-symbols (make-hash-table))
@@ -85,6 +85,15 @@
                (pushnew pkg interesting-packages))))
     (let ((interesting-symbol-function
             (interesting-symbol-function ap)))
+      ;; For each interesting package, do apropos-list on
+      ;; INPUT-SYMBOL. From each result list, discard the ones that
+      ;; aren't considered interesting. After that, keep only external
+      ;; symbols, except for *package*, for which we keep all
+      ;; symbols. Then group the symbols into three lists based on
+      ;; status:
+      ;; - :present (internal or external)
+      ;; - :inherited
+      ;; - :other (not accessible in *package*)
       (dolist (pkg interesting-packages)
         (dolist (sym (apropos-list input-symbol pkg))
           (when (funcall interesting-symbol-function sym)
