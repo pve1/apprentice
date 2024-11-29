@@ -17,7 +17,7 @@
   (let ((id (incf *button-callback-id-counter*)))
     (setf (gethash *button-callback-id-counter*
                    *button-callbacks*)
-          (list ap callback))
+          (list ap callback *package* *buffer-context*))
     id))
 
 (defmethod make-button-callback-form (ap when-clicked)
@@ -35,9 +35,11 @@
 
 ;; apprentice is *apprentice*
 (defmethod eval-button-callback-1 (apprentice id)
-  (destructuring-bind (ap callback)
+  (destructuring-bind (ap callback package buffer-context)
       (lookup-button-callback-with-apprentice apprentice id)
-    (eval-button-callback-2 ap callback)))
+    (let ((*package* package)
+          (*buffer-context* buffer-context))
+      (eval-button-callback-2 ap callback))))
 
 ;; apprentice is the one that created the button
 (defmethod eval-button-callback-2 (apprentice (callback list))
