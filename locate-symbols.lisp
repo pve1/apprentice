@@ -76,6 +76,7 @@
              symbol-name
              package-indicator)))
 
+;; Whoever uses this should bind *package* first.
 (defun In-package-form-fn (form)
   (when (and (listp form)
              (eq (car form) 'in-package))
