@@ -1,8 +1,4 @@
 ;;;; Requires
-;;;;   closer-mop
-;;;;   "grep-apprentice"
-;;;;   "buttons"
-;;;;   "temporary-apprentice"
 ;;;;   "symbols"
 
 (in-package :apprentice) cx
