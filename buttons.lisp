@@ -112,8 +112,8 @@
                                       arguments
                                       skippable)
   (unless when-clicked
-    (setf when-clicked
-          `(button-pressed *button-apprentice* ,label)))
+    (setf when-clicked (lambda (ap)
+                         (apply #'button-pressed ap name arguments))))
   (put-button-here apprentice
                    'lisp-button
                    label
@@ -123,8 +123,8 @@
                    :offset offset
                    :stream stream
                    :redisplay redisplay
-                   :name name
-                   :arguments arguments
+                   :name nil
+                   :arguments nil
                    :skippable skippable))
 
 ;; Fixme: Depends on internal swank function.
@@ -170,12 +170,12 @@
         (hash-table (gethash button-name buttons)))))
   (:documentation ""))
 
-(defgeneric Button-pressed (apprentice button)
-  (:method (apprentice (button-name string))
+(defgeneric Button-pressed (apprentice button &rest rest)
+  (:method (apprentice (button-name string)  &rest rest)
     (alexandria:if-let ((button (find-button apprentice
                                              button-name)))
-      (button-pressed apprentice button)
+      (apply #'button-pressed apprentice button rest)
       (error "No button named ~S." button-name)))
-  (:method (apprentice (button function))
-    (funcall button apprentice))
+  (:method (apprentice (button function) &rest rest)
+    (apply button apprentice rest))
   (:documentation ""))

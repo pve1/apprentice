@@ -160,7 +160,8 @@
             lines)))))
 
 (defmethod button-pressed ((apprentice wide-toplevel-apprentice)
-                           (name (eql 'display)))
+                           (name (eql 'display))
+                           &rest rest)
   (setf (line-display-mode apprentice)
         (alexandria:rotate (line-display-mode apprentice) -1))
   (emacs-message
@@ -170,7 +171,8 @@
      (:uninterned "Present symbols as uninterned"))))
 
 (defmethod button-pressed ((apprentice wide-toplevel-apprentice)
-                           (name (eql 'export)))
+                           (name (eql 'export))
+                           &rest rest)
   (export (symbols apprentice) *package*)
   (emacs-message
    (format nil "Exported ~A symbols from ~A."
