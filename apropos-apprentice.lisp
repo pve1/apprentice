@@ -14,7 +14,7 @@
 ;; to find interesting packages and show external symbols. Also try to
 ;; handle the case where no symbol is specified ("a:")
 
-;; 2. If a package prefix is not specified, use
+;; 2. [Not implemented yet] If a package prefix is not specified, use
 ;; apropos-apprentice-used-packages to find packages mentioned in the
 ;; current file to show external symbols. Also show internal apropos
 ;; of *package*.
