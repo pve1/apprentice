@@ -101,12 +101,16 @@
                                                position-package-marker-2)
   (handler-case (call-next-method)
     (eclector.reader:symbol-name-must-not-end-with-package-marker ()
-      (let ((symbol (make-symbol "")))
-        (setf (get symbol 'package-indicator)
+      (let ((symbol (make-symbol ""))
+            (package-indicator
               (if position-package-marker-2
                   (subseq token 0 (- (length token) 2))
-                  (subseq token 0 (1- (length token))))
-              (get symbol 'unspecified-symbol) t)
+                  (subseq token 0 (1- (length token))))))
+        (setf (get symbol 'package-indicator) package-indicator
+              (get symbol 'unspecified-symbol) t
+              ;; We add this the buffer context mainly for apropos-apprentice.
+              ;; This is also done in interpret-symbol below.
+              (getf *buffer-context* 'package-indicator) package-indicator)
         (throw 'symbol symbol)))))
 
 ;; Handle cl:nil specially.
