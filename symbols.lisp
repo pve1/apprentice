@@ -2,6 +2,11 @@
 
 (in-package :apprentice) cx
 
+;; These functions work differently depending on if the
+;; symbol-designator is a string or a symbol. For strings, it's
+;; straightforward, but SYMBOL-STATUS additionally checks that
+;; whatever FIND-SYMBOL returns is EQ to the argument symbol.
+
 (defun symbol-status (symbol-designator &optional (package *package*))
   (typecase symbol-designator
     ;; Also keyword
