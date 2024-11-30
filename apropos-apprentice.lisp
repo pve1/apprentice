@@ -1,6 +1,7 @@
 ;;;; Requires
 ;;;;   apprentice
 ;;;;   "caching-apprentice"
+;;;;   "symbols"
 
 ;;;; Apropos apprentice
 
@@ -102,6 +103,7 @@
               (when (or (eq pkg *package*)
                         (eq status :external))
                 (incf interesting-symbol-count)
+                ;; Sort according to status
                 (cond ((and (eql pkg *package*)
                             (member status '(:external :internal)))
                        (setf (gethash sym present-symbols) t))
@@ -115,53 +117,136 @@
 
 (defmethod apropos-export-symbols ((ap apropos-apprentice)
                                    root-symbol
-                                   &key breadth
-                                        (package *package*))
-  (assert (member breadth '(nil :present :all)))
-  (destructuring-bind (&key present
-                            inherited
-                            other)
+                                   &key (package *package*))
+  (destructuring-bind (&key present inherited other)
       (apropos-compute-interesting-symbols ap root-symbol)
-    (ecase breadth
-      ((:present nil)
-       (export present package)
-       present))))
-
-(defmethod apropos-export-button ((ap apropos-apprentice) symbol
-                                  &key offset)
-  (put-lisp-button-here
-   ap "[EXPRSNT]"
-   `(let ((symbols (apropos-export-symbols
-                    *button-apprentice*
-                    ',symbol)))
-      (emacs-message
-       (format nil "Exported ~A symbols from ~S."
-               (length symbols)
-               (package-name *package*))))
-   :offset offset))
+    (export present package)
+    (import other package)
+    (export other package)
+    (append present other)))
 
 (defmethod apropos-import-symbols ((ap apropos-apprentice)
                                    root-symbol
                                    &key (package *package*))
-  (destructuring-bind (&key present
-                            inherited
-                            other)
+  (destructuring-bind (&key present inherited other)
       (apropos-compute-interesting-symbols ap root-symbol)
-    (when other
-      (import other package)
-      other)))
+    (import inherited package)
+    (import other package)
+    (append inherited other)))
+
+(defmethod apropos-unintern-symbols ((ap apropos-apprentice)
+                                     root-symbol
+                                     &key (package *package*))
+  (destructuring-bind (&key present inherited other)
+      (apropos-compute-interesting-symbols ap root-symbol)
+    (let (other-uninterned)
+      (dolist (s other)
+        (when (symbol-present-p s package)
+          (push s other-uninterned)
+          (unintern s)))
+      (dolist (s present)
+        (unintern s package))      
+      (append present other-uninterned))))
+
+(defmethod apropos-unexport-symbols ((ap apropos-apprentice)
+                                     root-symbol
+                                     &key (package *package*))
+  (destructuring-bind (&key present inherited other)
+      (apropos-compute-interesting-symbols ap root-symbol)
+    (let (other-unexported)
+      (dolist (s other)
+        (when (symbol-present-p s package)
+          (push s other-unexported)))
+      (unexport present package)
+      (unexport other-unexported package)
+      (append present other-unexported))))
+
+(defmethod button-pressed ((ap apropos-apprentice) (button (eql 'export))
+                           &key symbol)
+  (let ((symbols (apropos-export-symbols
+                  *button-apprentice*
+                  symbol)))
+    (let ((*package* (find-package :keyword)))
+      (format *debug-io* "; Exported ~{; ~S~^~%~}"
+              symbols))
+    (emacs-message
+     (format nil "Exported ~A symbols from ~S."
+             (length symbols)
+             (package-name *package*)))))
+
+(defmethod button-pressed ((ap apropos-apprentice) (button (eql 'unexport))
+                           &key symbol)
+  (let ((symbols (apropos-unexport-symbols
+                  *button-apprentice*
+                  symbol)))
+    (let ((*package* (find-package :keyword)))
+      (format *debug-io* "; Unexported ~{; ~S~^~%~}"
+              symbols))
+    (emacs-message
+     (format nil "Unexported ~A symbols from ~S."
+             (length symbols)
+             (package-name *package*)))))
+
+(defmethod button-pressed ((ap apropos-apprentice) (button (eql 'import))
+                           &key symbol)
+  (let ((symbols (apropos-import-symbols
+                  *button-apprentice*
+                  symbol)))
+    (let ((*package* (find-package :keyword)))
+      (format *debug-io* "; Imported ~{; ~S~^~%~}"
+              symbols))
+    (emacs-message
+     (format nil "Imported ~A symbols into ~S."
+             (length symbols)
+             (package-name *package*)))))
+
+(defmethod button-pressed ((ap apropos-apprentice) (button (eql 'unintern))
+                           &key symbol)
+  (let ((symbols (apropos-unintern-symbols
+                  *button-apprentice*
+                  symbol)))
+    (let ((*package* (find-package :keyword)))
+      (format *debug-io* "; Uninterned ~{; ~S~^~%~}"
+              symbols))
+    (emacs-message
+     (format nil "Uninterned ~A symbols from ~S."
+             (length symbols)
+             (package-name *package*)))))
+
+(defmethod apropos-export-button ((ap apropos-apprentice) symbol
+                                  &key offset)
+  (put-lisp-button-here
+   ap "[EXPORT]"
+   nil
+   :name 'export
+   :arguments (list :symbol symbol)
+   :offset offset))
+
+(defmethod apropos-unexport-button ((ap apropos-apprentice) symbol
+                                  &key offset)
+  (put-lisp-button-here
+   ap "[UNEXPORT]"
+   nil
+   :name 'unexport
+   :arguments (list :symbol symbol)
+   :offset offset))
 
 (defmethod apropos-import-button ((ap apropos-apprentice) symbol
                                   &key offset)
   (put-lisp-button-here
    ap "[IMPORT]"
-   `(let ((symbols (apropos-import-symbols
-                    *button-apprentice*
-                    ',symbol)))
-      (emacs-message
-       (format nil "Imported ~A symbols into ~S."
-               (length symbols)
-               (package-name *package*))))
+   nil
+   :name 'import
+   :arguments (list :symbol symbol)
+   :offset offset))
+
+(defmethod apropos-unintern-button ((ap apropos-apprentice) symbol
+                                    &key offset)
+  (put-lisp-button-here
+   ap "[UNINTERN]"
+   nil
+   :name 'unintern
+   :arguments (list :symbol symbol)
    :offset offset))
 
 (defmethod apprentice-update ((ap apropos-apprentice)
@@ -175,11 +260,13 @@
     (when interesting-symbols
       (with-output-to-string (*standard-output*)
         (princ "Apropos: ")
-        (when (getf interesting-symbols :present)
-          (apropos-export-button ap object :offset offset))
-        (when (getf interesting-symbols :other)
-          (princ " ")
-          (apropos-import-button ap object :offset offset))
+        (apropos-export-button ap object :offset offset)
+        (princ " ")
+        (apropos-unexport-button ap object :offset offset)
+        (princ " ")
+        (apropos-import-button ap object :offset offset)
+        (princ " ")
+        (apropos-unintern-button ap object :offset offset)
         (terpri)
         (destructuring-bind (&key inherited present other)
             interesting-symbols
