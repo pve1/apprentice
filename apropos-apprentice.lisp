@@ -1,6 +1,7 @@
 ;;;; Requires
 ;;;;   apprentice
 ;;;;   "caching-apprentice"
+;;;;   "buttons"
 ;;;;   "symbols"
 
 ;;;; Apropos apprentice
