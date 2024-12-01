@@ -116,28 +116,6 @@
                             :interpret-symbol-function interpret)
       (call-with-forms file form-fn))))
 
-(defmethod symbol-information-loc ((name string)
-                                   &optional (package *package*))
-  (multiple-value-bind (symbol status)
-      (find-symbol name package)
-    (when status
-      (symbol-information symbol package))))
-
-(defmethod symbol-information-loc ((symbol symbol)
-                                   &optional (package *package*))
-  (let ((name (symbol-name symbol)))
-    (multiple-value-bind (symbol* status)
-        (find-symbol name package)
-      (if (and status (eq symbol* symbol))
-          (list :symbol symbol
-                :status status
-                :home-package (symbol-package symbol)
-                :status-in-home-package
-                (nth-value 1 (find-symbol
-                              name
-                              (symbol-package symbol))))
-          nil))))
-
 (defun Locate-symbols (file predicate)
   (let ((locations ())
         (*package* *package*))
