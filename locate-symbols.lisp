@@ -79,18 +79,25 @@
              (eq (car form) 'in-package))
     (setf *package* (find-package (cadr form)))))
 
-(defun Call-with-forms (file fn)
-  (alexandria:with-input-from-file (f file)
-    (loop :for form = (eclector.reader:read f nil f)
-          :until (eq form f)
-          :do (funcall fn form))))
+(defmethod Call-with-forms ((stream stream) fn)
+  (loop :for form = (eclector.reader:read
+                     stream nil stream)
+        :until (eq form stream)
+        :do (funcall fn form)))
 
+(defmethod Call-with-forms ((file string) fn)
+  (alexandria:with-input-from-file (f file)
+    (call-with-forms f fn)))
+
+;; Symbol-fn: symbol-name, package-indicator -> ...
 (defun Call-with-symbol-names (file symbol-fn
                                &key (form-fn (constantly nil)))
   (with-eclector-client (make-instance 'locate-symbols-client
                           :interpret-symbol-function symbol-fn)
     (call-with-forms file form-fn)))
 
+;; Symbol-fn: symbol -> ...
+;; Form-fn should be something like in-package-form-fn
 (defun Call-with-symbols (file symbol-fn
                           &key (form-fn (constantly nil))
                                (on-missing-symbol :skip))
@@ -141,8 +148,12 @@
          (push (list *locate-symbols-token-start*
                      name
                      package-indicator
-                     *locate-symbols-package-marker-1*
-                     *locate-symbols-package-marker-2*)
+                     (cond ((and *locate-symbols-package-marker-1*
+                                 *locate-symbols-package-marker-2*)
+                            "::")
+                           (*locate-symbols-package-marker-1*
+                            ":")
+                           (t "")))
                locations)))
      :form-fn 'in-package-form-fn)
     ;; Reverse order is intentional because it makes inserting easier.
@@ -184,52 +195,43 @@
           (eq :current
               *locate-symbols-package-indicator*)))))
 
-(defun symbol-package-markers-loc (symbol)
-  (multiple-value-bind (symbol status)
-      (find-symbol (string symbol)
-                   (symbol-package symbol))
+;; Utils
+
+(defun find-best (list predicate &optional (key #'identity))
+  "PREDICATE should return non-nil if its first argument is 'better'
+than its second argument."
+  (let ((best (first list)))
+    (loop :for item :in (rest list)
+          :when (funcall predicate
+                         (funcall key item)
+                         (funcall key best))
+          :do (setf best item))
+    best))
+
+(defun shortest-package-name-loc (package)
+  (find-best (list* (package-name package)
+                    (package-nicknames package))
+             (lambda (x y)
+               (< (length x)
+                  (length y)))))
+
+(defun symbol-package-markers-loc (symbol &optional package)
+  (let* ((package* (or package (symbol-package symbol)))
+         (status (symbol-status symbol package*)))
     (case status
       (:external ":")
       (:inherited "::")
       (:internal "::"))))
 
-(defun symbol-package-prefix-loc (symbol)
-  (let ((markers (symbol-package-prefix-loc
-                  symbol)))
+(defun symbol-package-prefix-loc (symbol &optional package)
+  (let* ((package* (or package (symbol-package symbol)))
+         (markers (symbol-package-markers-loc symbol
+                                              package*)))
     (concatenate 'string
                  (string-downcase
-                  (package-name
-                   (symbol-package symbol)))
+                  (package-name (or package
+                                    (symbol-package symbol))))
                  markers)))
-
-;; An edit can be (1234 :insert "foo:") or (1234 :delete 3).
-
-(defun emacs-perform-edits (file edits &optional (reindent t))
-  (swank:eval-in-emacs
-   `(cl-flet
-     ((del (n) (delete-forward-char n))
-      (ins (str) (insert str)))
-     (save-excursion
-      (with-current-buffer (find-file-noselect ,file)
-        (dolist (edit ',edits)
-          (cl-destructuring-bind
-           (pos operation &rest args) edit
-           (goto-char (1+ pos))
-           (cl-case operation
-                    (:insert (apply #'ins args))
-                    (:delete (apply #'del args)))))
-        ,(when reindent
-           `(indent-region (point-min) (point-max))))))))
-
-(defun emacs-insert-strings (file position-string-pairs
-                             &optional (reindent t))
-  (emacs-perform-edits
-   file
-   (mapcar (lambda (x)
-             (destructuring-bind (pos string) x
-               (list pos :insert string)))
-          position-string-pairs)
-   reindent))
 
 ;;; TODO: Design the compute-edits functionality properly
 
@@ -243,34 +245,16 @@
                        (eq used-package (find-package
                                          package-indicator)))))))
     (mapcar (lambda (loc)
-              (destructuring-bind (pos name pkgi pmark1 pmark2)
+              (destructuring-bind (pos name pkgi pkgmarker)
                   loc
                 (list pos :delete (+ (length pkgi)
-                                     (if pmark2
-                                         2
-                                         1)))))
+                                     (length pkgmarker)))))
             locs)))
-
-(defun find-best (list predicate &optional (key #'identity))
-  "PREDICATE should return non-nil if its first argument is 'better'
-than its second argument."
-  (let ((best (first list)))
-    (loop :for item :in (rest list)
-          :when (funcall predicate
-                         (funcall key item)
-                         (funcall key best))
-          :do (setf best item))
-    best))
 
 (defun compute-edits-for-unuse-package (file unused-package-designator
                                         &optional (package *package*))
   (let* ((unused-package (find-package unused-package-designator))
-         (shortest-name
-           (find-best (list* (package-name unused-package)
-                             (package-nicknames unused-package))
-                      (lambda (x y)
-                        (< (length x)
-                           (length y)))))
+         (shortest-name (shortest-package-name-loc unused-package))
          (prefix (concatenate 'string
                               (string-downcase shortest-name)
                               ":"))
@@ -301,12 +285,10 @@ than its second argument."
                            (find-symbol name package-indicator)
                          (eq symbol imported-symbol)))))))
     (mapcar (lambda (loc)
-              (destructuring-bind (pos name pkgi pmark1 pmark2)
+              (destructuring-bind (pos name pkgi pkgmarker)
                   loc
                 (list pos :delete (+ (length pkgi)
-                                     (if pmark2
-                                         2
-                                         1)))))
+                                     (length pkgmarker)))))
             locs)))
 
 (defun compute-edits-for-unintern-symbol (file uninterned-symbol
@@ -331,7 +313,66 @@ than its second argument."
                            (find-symbol name package)
                          (eq symbol uninterned-symbol)))))))
     (mapcar (lambda (loc)
-              (destructuring-bind (pos name pkgi pmark1 pmark2)
+              (destructuring-bind (pos name pkgi pkgmarker)
                   loc
                 (list pos :insert prefix)))
             locs)))
+
+(defun compute-edits-for-toggle-qualifier (file package-name)
+  (let* ((package (find-package package-name))
+         (current-package *package*)
+         (on-or-off :unknown)
+         (locs
+           (locate-symbol-names
+            file
+            (lambda (name pkgind)
+              (when (eq current-package *package*)
+                (print (list name on-or-off) *debug-io*)
+                (block nil
+                  (tagbody again
+                     (cond ((and (eq on-or-off :unknown)
+                                 (stringp pkgind)
+                                 (when (eq package (find-package pkgind))
+                                   (setf on-or-off nil) ; set remove qualifiers
+                                   (go again))))
+                           ((and (eq on-or-off :unknown)
+                                 (eq :current pkgind))
+                            (let* ((sym (find-symbol name
+                                                     current-package))
+                                   (pkg (symbol-package sym)))
+                              (when (eq pkg package)
+                                (setf on-or-off t) ; set add qualifiers
+                                (go again))))
+                           ((and (null on-or-off)
+                                 (stringp pkgind)) ; remove qualifiers
+                            (let ((symbol-package
+                                    (symbol-package
+                                     (find-symbol name pkgind))))
+                              (return (eq symbol-package package))))
+                           ((and on-or-off
+                                 (eq :current pkgind)) ; add qualifiers
+                            (let ((symbol-package
+                                    (symbol-package
+                                     (find-symbol name current-package))))
+                              (return (eq symbol-package package))))
+                           (t nil)))))))))
+    (print locs *debug-io*)
+    (if on-or-off
+        (let ((qualifier (string-downcase
+                          (shortest-package-name-loc package))))
+          (mapcar (lambda (x)
+                    (destructuring-bind (pos name pkgind &rest rest)
+                        x
+                      (let ((sym (find-symbol name current-package)))
+                        (list pos :insert (concatenate 'string
+                                                       qualifier
+                                                       (symbol-package-markers-loc
+                                                        sym package))))))
+                  locs))
+        (mapcar (lambda (x)
+                  (destructuring-bind (pos name pkgi pkgmarker)
+                      x
+                    (list pos :delete (+ (length pkgi)
+                                         (length pkgmarker)))))
+                locs))))
+
