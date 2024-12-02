@@ -2,6 +2,12 @@
 ;;;;   "symbols"
 ;;;;   "emacs"
 
+;;;; This file provides functions for locating symbols in source
+;;;; files. It also provides functions for computing edits that need
+;;;; to happen in the source files for various operations performed in
+;;;; the lisp image. Example: Add package qualifiers to symbols if a
+;;;; package is unused.
+
 (in-package :apprentice) cx
 
 ;; WIP
