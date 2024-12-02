@@ -44,9 +44,11 @@
 ;; - max-line
 ;; - enclosing-form
 ;; - toplevel-form
+;; - buffer-name
 
 ;; Reasonable default
-(defvar apprentice-provide-context '(filename
+(defvar apprentice-provide-context '(buffer-name
+                                     filename
                                      point
                                      column
                                      line
@@ -724,7 +726,9 @@
       ,@(when (member 'filename apprentice-provide-context)
           (list :filename (buffer-file-name)))
       ,@(when (member 'locked apprentice-provide-context)
-          (list :locked apprentice-locked-p)))))
+          (list :locked apprentice-locked-p))
+      ,@(when (member 'buffer-name apprentice-provide-context)
+          (list :buffer-name (buffer-name (current-buffer)))))))
 
 (defun apprentice-determine-input-at-point ()
   (cl-block determine-input
