@@ -1,5 +1,6 @@
 ;;;; Requires
 ;;;;   "symbols"
+;;;;   "emacs"
 
 (in-package :apprentice) cx
 

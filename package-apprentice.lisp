@@ -17,7 +17,7 @@
                                              package-designator
                                              file)
   (flet ((save ()
-           (swank:eval-in-emacs
+           (eval-in-emacs
             `(with-current-buffer (get-file-buffer ,file)
                (when (and (buffer-modified-p)
                           (y-or-n-p (format "Save buffer %s?" ,file)))
@@ -36,7 +36,7 @@
   (use-package (find-package package-designator)
                (find-package package))
   (when (or remove-prefixes
-            (swank:eval-in-emacs
+            (eval-in-emacs
              `(with-current-buffer (get-file-buffer ,file)
                 (if (y-or-n-p "Remove package prefixes?")
                     (progn
@@ -55,7 +55,7 @@
                                              package-designator
                                              file
                                              &key (package *package*))
-  (when (swank:eval-in-emacs
+  (when (eval-in-emacs
          `(with-current-buffer (get-file-buffer ,file)
             (if (y-or-n-p "Add package prefixes?")
                 (progn

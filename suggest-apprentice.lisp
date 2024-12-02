@@ -2,6 +2,7 @@
 ;;;;   cl-interpol
 ;;;;   "apprentice"
 ;;;;   "buttons"
+;;;;   "emacs"
 
 (cl-interpol:enable-interpol-syntax)
 (in-package :apprentice) cx
@@ -92,14 +93,14 @@
                                (alexandria:when-let
                                    ((pre (pre-insert-elisp-form
                                           suggestion)))
-                                 (swank::process-form-for-emacs pre))))
+                                 (process-form-for-emacs pre))))
                             (etypecase suggestion
                               (string nil)
                               (suggestion
                                (alexandria:when-let
                                    ((post (post-insert-elisp-form
                                            suggestion)))
-                                 (swank::process-form-for-emacs post)))))
+                                 (process-form-for-emacs post)))))
            :face (when (suggestion-string suggestion)
                    :unspecified))
           (unless (alexandria:ends-with (suggestion-string suggestion)
@@ -159,13 +160,13 @@
 
 (defmethod Suggest-get-current-path (ap)
   (alexandria:when-let ((file (buffer-context-property :filename)))
-    (swank:eval-in-emacs
+    (eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
         (apprentice-current-form-path)))))
 
 (defmethod Suggest-get-toplevel-name (ap)
   (alexandria:when-let ((file (buffer-context-property :filename)))
-    (swank:eval-in-emacs
+    (eval-in-emacs
      `(with-current-buffer (get-file-buffer ,file)
         (apprentice-toplevel-form-name)))))
 
@@ -624,7 +625,7 @@
                  (eql #\) (preceding-char object)))
         (alexandria:when-let*
             ((preceding-list
-              (swank:eval-in-emacs
+              (eval-in-emacs
                `(with-current-buffer
                     (get-file-buffer
                      ,(buffer-context-property :filename))

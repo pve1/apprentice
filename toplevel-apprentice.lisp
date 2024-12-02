@@ -5,6 +5,7 @@
 ;;;;   "caching-apprentice"
 ;;;;   "buttons"
 ;;;;   "symbols"
+;;;;   "emacs"
 
 (in-package :apprentice) cx
 

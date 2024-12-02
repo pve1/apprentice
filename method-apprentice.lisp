@@ -16,7 +16,7 @@
     t))
 
 (defun method-apprentice-dim-current-line ()
-  (swank:eval-in-emacs
+  (eval-in-emacs
    '(progn
      (with-current-buffer apprentice-buffer-name
        (add-text-properties (save-excursion

@@ -1,5 +1,6 @@
 ;;;; Requires
 ;;;;   "apprentice"
+;;;;   "emacs"
 
 (in-package :apprentice) cx
 
@@ -139,7 +140,7 @@
   (put-button-here apprentice
                    'elisp-button
                    label
-                   (swank::process-form-for-emacs when-clicked)
+                   (process-form-for-emacs when-clicked)
                    :face face
                    :offset offset
                    :stream stream
@@ -152,11 +153,8 @@
   (push-description-property
    (list 'ephemeral-function
               :name symbol
-              :lambda-string (swank::process-form-for-emacs
+              :lambda-string (process-form-for-emacs
                               lambda-form))))
-
-(defun Emacs-message (object)
-  (swank:eval-in-emacs `(message ,(princ-to-string object))))
 
 (defgeneric Buttons (apprentice)
   (:documentation "Returns the buttons of an apprentice."))

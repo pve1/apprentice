@@ -3,6 +3,7 @@
 ;;;;   "apprentice"
 ;;;;   "buttons"
 ;;;;   "temporary-apprentice"
+;;;;   "emacs"
 
 (in-package :apprentice) cx
 

@@ -1,6 +1,7 @@
 ;;;; Requires
 ;;;;   "apprentice"
 ;;;;   "buttons"
+;;;;   "emacs"
 
 (in-package :apprentice) cx
 

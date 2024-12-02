@@ -52,7 +52,7 @@
   "Mentions: ")
 
 (defmethod Grep-apprentice-query-replace (ap file from to)
-  (swank:eval-in-emacs
+  (eval-in-emacs
    `(let ((buf (get-file-buffer ,file)))
       (when buf
         (display-buffer buf)

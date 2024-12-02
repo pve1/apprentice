@@ -3,6 +3,7 @@
 ;;;;   "caching-apprentice"
 ;;;;   "buttons"
 ;;;;   "symbols"
+;;;;   "emacs"
 
 ;;;; Apropos apprentice
 
