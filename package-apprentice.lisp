@@ -24,12 +24,14 @@
 (defmethod package-apprentice-use-package ((ap package-apprentice)
                                            package-designator
                                            &key (package *package*))
-  (use-package package-designator package))
+  (use-package package-designator package)
+  (emacs-message (format nil "Used package ~S" package-designator)))
 
 (defmethod package-apprentice-unuse-package ((ap package-apprentice)
                                              package-designator
                                              &key (package *package*))
-  (unuse-package package-designator package))
+  (unuse-package package-designator package)
+  (emacs-message (format nil "Unused package ~S" package-designator)))
 
 (defmethod package-apprentice-clear-external ((ap package-apprentice)
                                               package-designator)
@@ -60,12 +62,14 @@
                                 "[UNUSE]"
                                 `(package-apprentice-unuse-package
                                   *button-apprentice*
-                                  ,(package-name package)))
+                                  ,(package-name package))
+                                :redisplay t)
           (put-lisp-button-here ap
                                 "[USE]"
                                 `(package-apprentice-use-package
                                   *button-apprentice*
-                                  ,(package-name package))))
+                                  ,(package-name package))
+                                :redisplay t))
       (princ " ")
       (put-lisp-button-here ap
                             "[QUAL]"
