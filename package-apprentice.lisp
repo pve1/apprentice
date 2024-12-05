@@ -15,61 +15,35 @@
 
 (defmethod package-apprentice-toggle-prefix ((ap package-apprentice)
                                              package-designator
-                                             file)
-  (flet ((save ()
-           (eval-in-emacs
-            `(with-current-buffer (get-file-buffer ,file)
-               (when (and (buffer-modified-p)
-                          (y-or-n-p (format "Save buffer %s?" ,file)))
-                 (save-buffer))))))
-    (save)
-    (let ((locations (locate-unqualified-symbols-from-package
-                      file package-designator)))
-      (add-package-prefixes-to-buffer file locations)
-      (save))))
+                                             buffer)
+  (alexandria:when-let ((edits (compute-edits-for-toggle-qualifier
+                                (emacs-buffer-string buffer)
+                                package-designator)))
+    (emacs-perform-edits buffer edits)))
 
 (defmethod package-apprentice-use-package ((ap package-apprentice)
                                            package-designator
-                                           file
-                                           &key (package *package*)
-                                                remove-prefixes)
-  (use-package (find-package package-designator)
-               (find-package package))
-  (when (or remove-prefixes
-            (eval-in-emacs
-             `(with-current-buffer (get-file-buffer ,file)
-                (if (y-or-n-p "Remove package prefixes?")
-                    (progn
-                      (when (and (buffer-modified-p)
-                                 (y-or-n-p "Save buffer?"))
-                        (save-buffer))
-                      ;; Don't continue if buffer is modified.
-                      (not (buffer-modified-p)))
-                    nil))))
-    (emacs-perform-edits
-     file
-     (compute-edits-for-use-package
-      file package-designator package))))
+                                           &key (package *package*))
+  (use-package package-designator package))
 
 (defmethod package-apprentice-unuse-package ((ap package-apprentice)
                                              package-designator
-                                             file
                                              &key (package *package*))
-  (when (eval-in-emacs
-         `(with-current-buffer (get-file-buffer ,file)
-            (if (y-or-n-p "Add package prefixes?")
-                (progn
-                  (when (and (buffer-modified-p)
-                             (y-or-n-p "Save buffer?"))
-                    (save-buffer))
-                  ;; Don't continue if buffer is modified.
-                  (not (buffer-modified-p)))
-                nil)))
-    (emacs-perform-edits
-     file
-     (compute-edits-for-unuse-package
-      file package-designator package)))
   (unuse-package package-designator package))
+
+(defmethod package-apprentice-clear-external ((ap package-apprentice)
+                                              package-designator)
+  (let ((pkg (find-package package-designator))
+        (ext nil))
+    (do-external-symbols (sym pkg)
+      (push sym ext))
+    (unexport ext pkg)))
+
+(defmethod package-apprentice-clear-symbols ((ap package-apprentice)
+                                             package-designator)
+  (loop :with pkg = (find-package package-designator)
+        :for sym :being :each :symbol :in pkg
+        :do (unintern sym pkg)))
 
 (defmethod describe-with-apprentice ((ap package-apprentice)
                                      (symbol symbol)
@@ -86,45 +60,36 @@
                                 "[UNUSE]"
                                 `(package-apprentice-unuse-package
                                   *button-apprentice*
-                                  ,(package-name package)
-                                  ,(buffer-context-property :filename)))
+                                  ,(package-name package)))
           (put-lisp-button-here ap
                                 "[USE]"
                                 `(package-apprentice-use-package
                                   *button-apprentice*
-                                  ,(package-name package)
-                                  ,(buffer-context-property :filename))))
+                                  ,(package-name package))))
+      (princ " ")
+      (put-lisp-button-here ap
+                            "[QUAL]"
+                            `(package-apprentice-toggle-prefix
+                              *button-apprentice*
+                              ',symbol
+                              ,(buffer-context-property :buffer-name))
+                            :redisplay t)
       (princ " ")
       (put-lisp-button-here ap
                             "[DEL]"
-                            `(delete-package
-                              (find-package ',symbol))
+                            `(delete-package (find-package ',symbol))
                             :redisplay t)
       (princ " ")
       (put-lisp-button-here ap
                             "[CLREXT]"
-                            `(let ((pkg (find-package ',symbol))
-                                   (ext '()))
-                               (do-external-symbols (sym pkg)
-                                 (push sym ext))
-                               (unexport ext pkg))
+                            `(package-apprentice-clear-external
+                              *button-apprentice* ',symbol)
                             :redisplay t)
       (princ " ")
       (put-lisp-button-here ap
                             "[CLRSYM]"
-                            `(loop :with pkg = (find-package ',symbol)
-                                   :for sym :being
-                                   :each :symbol
-                                   :in pkg
-                                   :do (unintern sym pkg))
-                            :redisplay t)
-      (princ " ")
-      (put-lisp-button-here ap
-                            "[PREFIX]"
-                            `(package-apprentice-toggle-prefix
-                              *button-apprentice*
-                              ,symbol
-                              ,(buffer-context-property :filename))
+                            `(package-apprentice-clear-symbols
+                              *button-apprentice* ',symbol)
                             :redisplay t)
       (terpri)
       (terpri)
