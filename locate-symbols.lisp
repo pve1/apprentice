@@ -337,13 +337,14 @@ than its second argument."
             file
             (lambda (name pkgind)
               (when (eq current-package *package*)
-                (print (list name on-or-off) *debug-io*)
                 (block nil
                   (tagbody again
+                     ;; First determine which operation we're going to
+                     ;; do.
                      (cond ((and (eq on-or-off :unknown)
                                  (stringp pkgind)
                                  (when (eq package (find-package pkgind))
-                                   (setf on-or-off nil) ; set remove qualifiers
+                                   (setf on-or-off :off) ; set remove qualifiers
                                    (go again))))
                            ((and (eq on-or-off :unknown)
                                  (eq :current pkgind))
@@ -351,38 +352,37 @@ than its second argument."
                                                      current-package))
                                    (pkg (symbol-package sym)))
                               (when (eq pkg package)
-                                (setf on-or-off t) ; set add qualifiers
+                                (setf on-or-off :on) ; set add qualifiers
                                 (go again))))
-                           ((and (null on-or-off)
+                           ((and (eq :off on-or-off)
                                  (stringp pkgind)) ; remove qualifiers
                             (let ((symbol-package
                                     (symbol-package
                                      (find-symbol name pkgind))))
                               (return (eq symbol-package package))))
-                           ((and on-or-off
+                           ((and (eq :on on-or-off)
                                  (eq :current pkgind)) ; add qualifiers
                             (let ((symbol-package
                                     (symbol-package
                                      (find-symbol name current-package))))
                               (return (eq symbol-package package))))
                            (t nil)))))))))
-    (print locs *debug-io*)
-    (if on-or-off
-        (let ((qualifier (string-downcase
-                          (shortest-package-name-loc package))))
-          (mapcar (lambda (x)
-                    (destructuring-bind (pos name pkgind &rest rest)
-                        x
-                      (let ((sym (find-symbol name current-package)))
-                        (list pos :insert (concatenate 'string
-                                                       qualifier
-                                                       (symbol-package-markers-loc
-                                                        sym package))))))
-                  locs))
-        (mapcar (lambda (x)
-                  (destructuring-bind (pos name pkgi pkgmarker)
-                      x
-                    (list pos :delete (+ (length pkgi)
-                                         (length pkgmarker)))))
-                locs))))
-
+    (format *debug-io* "~{; ~S~%~}" locs)
+    (case on-or-off
+      (:on (let ((qualifier (string-downcase
+                             (shortest-package-name-loc package))))
+             (mapcar (lambda (x)
+                       (destructuring-bind (pos name pkgind &rest rest)
+                           x
+                         (let ((sym (find-symbol name current-package)))
+                           (list pos :insert (concatenate 'string
+                                                          qualifier
+                                                          (symbol-package-markers-loc
+                                                           sym package))))))
+                     locs)))
+      (:off (mapcar (lambda (x)
+                      (destructuring-bind (pos name pkgi pkgmarker)
+                          x
+                        (list pos :delete (+ (length pkgi)
+                                             (length pkgmarker)))))
+                    locs)))))
