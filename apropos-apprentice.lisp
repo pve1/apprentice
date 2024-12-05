@@ -169,8 +169,9 @@
                   *button-apprentice*
                   symbol)))
     (let ((*package* (find-package :keyword)))
-      (format *debug-io* "; Exported ~{; ~S~^~%~}"
-              symbols))
+      (when symbols
+        (format *debug-io* "; Exported: ~{~%; ~S~}~%"
+                symbols)))
     (emacs-message
      (format nil "Exported ~A symbols from ~S."
              (length symbols)
