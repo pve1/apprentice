@@ -91,7 +91,11 @@
         :until (eq form stream)
         :do (funcall fn form)))
 
-(defmethod Call-with-forms ((file string) fn)
+(defmethod Call-with-forms ((string string) fn)
+  (with-input-from-string (s string)
+    (call-with-forms s fn)))
+
+(defmethod Call-with-forms ((file pathname) fn)
   (alexandria:with-input-from-file (f file)
     (call-with-forms f fn)))
 
