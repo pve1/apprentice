@@ -11,6 +11,18 @@
 (defun process-form-for-emacs (form)
   (swank::process-form-for-emacs form))
 
+(defun as-buffer-form-emc (object &key find-file)
+  (etypecase object
+    (pathname (if find-file
+                  `(get-file-buffer ,(namestring object))
+                  `(find-file-noselect ,(namestring object))))
+    (string object)
+    (cons
+     (unless (member (car object) '(get-file-buffer
+                                    find-file-noselect))
+       (warn "Strange buffer form ~S." object))
+     object)))
+
 (defun Emacs-message (object)
   (eval-in-emacs `(message ,(princ-to-string object))))
 
@@ -35,6 +47,9 @@
                                 &optional begin end)
   (call-next-method))
 
+(defun Emacs-file-buffer-string (filename &optional begin end)
+  (emacs-buffer-string (pathname filename) begin end))
+
 ;; Works in apprentice context
 (defun Emacs-current-buffer-string (&optional begin end)
   (let ((bufname (buffer-context-property :buffer-name)))
@@ -43,22 +58,23 @@
 
 ;; An edit can be (1234 :insert "foo:") or (1234 :delete 3).
 
-(defun Emacs-perform-edits (file edits &optional (reindent t))
-  (eval-in-emacs
-   `(cl-flet
-     ((del (n) (delete-forward-char n))
-      (ins (str) (insert str)))
-     (save-excursion
-      (with-current-buffer (find-file-noselect ,file)
-        (dolist (edit ',edits)
-          (cl-destructuring-bind
-           (pos operation &rest args) edit
-           (goto-char (1+ pos))
-           (cl-case operation
-                    (:insert (apply #'ins args))
-                    (:delete (apply #'del args)))))
-        ,(when reindent
-           `(indent-region (point-min) (point-max))))))))
+(defun Emacs-perform-edits (buffer edits &optional (reindent t))
+  (let ((buffer-form (as-buffer-form-emc buffer)))
+    (eval-in-emacs
+     `(cl-flet
+       ((del (n) (delete-forward-char n))
+        (ins (str) (insert str)))
+       (with-current-buffer ,buffer-form
+         (save-excursion
+          (dolist (edit ',edits)
+            (cl-destructuring-bind
+             (pos operation &rest args) edit
+             (goto-char (1+ pos))
+             (cl-case operation
+                      (:insert (apply #'ins args))
+                      (:delete (apply #'del args)))))
+          ,(when reindent
+             `(indent-region (point-min) (point-max)))))))))
 
 (defun emacs-insert-strings (file position-string-pairs
                              &optional (reindent t))
