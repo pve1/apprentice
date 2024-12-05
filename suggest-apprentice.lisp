@@ -291,7 +291,8 @@
               (alexandria:ensure-list suffix)
               path :test #'equal)))
       ;; Toplevel
-      (when (null path)
+      (when (and (null path)
+                 (not (keywordp object)))
         ;; Defpackage
         (when (and line (<= line 3))
           ;; This form and the next messes with slime's package
