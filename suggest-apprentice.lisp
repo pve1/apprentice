@@ -38,12 +38,11 @@
 (defmethod Apprentice-create-ephemerals (apprentice)
   (create-ephemeral-elisp-function
    apprentice 'insert-toplevel-suggestion
-   '(lambda (file
+   '(lambda (buffer
              suggestion-string
              pre-insert-form
              post-insert-form)
-     (switch-to-buffer-other-window
-      (get-file-buffer file))
+     (switch-to-buffer-other-window buffer)
      (if pre-insert-form
          (eval (car (read-from-string
                      pre-insert-form)))
@@ -85,7 +84,7 @@
                   (suggestion-string suggestion))
            nil
            :name 'insert-toplevel-suggestion
-           :arguments (list (buffer-context-property :filename)
+           :arguments (list (buffer-context-property :buffer-name)
                             (suggestion-string suggestion)
                             (etypecase suggestion
                               (string nil)
@@ -159,15 +158,15 @@
               (closer-mop:class-direct-slots class)))))
 
 (defmethod Suggest-get-current-path (ap)
-  (alexandria:when-let ((file (buffer-context-property :filename)))
+  (alexandria:when-let ((buffer (buffer-context-property :buffer-name)))
     (eval-in-emacs
-     `(with-current-buffer (get-file-buffer ,file)
+     `(with-current-buffer ,buffer
         (apprentice-current-form-path)))))
 
 (defmethod Suggest-get-toplevel-name (ap)
-  (alexandria:when-let ((file (buffer-context-property :filename)))
+  (alexandria:when-let ((buffer (buffer-context-property :buffer-name)))
     (eval-in-emacs
-     `(with-current-buffer (get-file-buffer ,file)
+     `(with-current-buffer ,buffer
         (apprentice-toplevel-form-name)))))
 
 ;; Hack
@@ -628,8 +627,7 @@
             ((preceding-list
               (eval-in-emacs
                `(with-current-buffer
-                    (get-file-buffer
-                     ,(buffer-context-property :filename))
+                    ,(buffer-context-property :buffer-name)
                   (save-excursion
                    (let ((end (point)))
                      (backward-sexp)
