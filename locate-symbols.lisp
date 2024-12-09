@@ -340,61 +340,70 @@ than its second argument."
                 (list pos :insert prefix)))
             locs)))
 
-(defun compute-edits-for-toggle-qualifier (file package-name)
-  (let* ((package (find-package package-name))
-         (current-package *package*)
-         (on-or-off :unknown)
-         (locs
-           (locate-symbol-names
-            file
-            (lambda (name pkgind)
-              (when (eq current-package *package*)
-                (block nil
-                  (tagbody again
-                     ;; First determine which operation we're going to
-                     ;; do.
-                     (cond ((and (eq on-or-off :unknown)
-                                 (stringp pkgind)
-                                 (when (eq package (find-package pkgind))
-                                   (setf on-or-off :off) ; set remove qualifiers
-                                   (go again))))
-                           ((and (eq on-or-off :unknown)
-                                 (eq :current pkgind))
-                            (let* ((sym (find-symbol name
-                                                     current-package))
-                                   (pkg (symbol-package sym)))
-                              (when (eq pkg package)
-                                (setf on-or-off :on) ; set add qualifiers
-                                (go again))))
-                           ((and (eq :off on-or-off)
-                                 (stringp pkgind)) ; remove qualifiers
-                            (let ((symbol-package
-                                    (symbol-package
-                                     (find-symbol name pkgind))))
-                              (return (eq symbol-package package))))
-                           ((and (eq :on on-or-off)
-                                 (eq :current pkgind)) ; add qualifiers
-                            (let ((symbol-package
-                                    (symbol-package
-                                     (find-symbol name current-package))))
-                              (return (eq symbol-package package))))
-                           (t nil)))))))))
-    (format *debug-io* "~{; ~S~%~}" locs)
-    (case on-or-off
-      (:on (let ((qualifier (string-downcase
-                             (shortest-package-name-loc package))))
-             (mapcar (lambda (x)
-                       (destructuring-bind (pos name pkgind &rest rest)
-                           x
-                         (let ((sym (find-symbol name current-package)))
-                           (list pos :insert (concatenate 'string
-                                                          qualifier
-                                                          (symbol-package-markers-loc
-                                                           sym package))))))
-                     locs)))
-      (:off (mapcar (lambda (x)
-                      (destructuring-bind (pos name pkgi pkgmarker)
-                          x
-                        (list pos :delete (+ (length pkgi)
-                                             (length pkgmarker)))))
-                    locs)))))
+(defun compute-edits-for-toggle-qualifier (file package-name
+                                           &key symbol-predicate)
+  (flet ((satisfies-predicate (name pkgind)
+           (when symbol-predicate
+             (funcall symbol-predicate
+                      (find-symbol name pkgind)))))
+    (let* ((package (find-package package-name))
+           (current-package *package*)
+           (on-or-off :unknown)
+           (locs
+             (locate-symbol-names
+              file
+              (lambda (name pkgind)
+                (when (eq current-package *package*)
+                  (block nil
+                    (tagbody again
+                       ;; First determine which operation we're going to
+                       ;; do.
+                       (cond ((and (eq on-or-off :unknown)
+                                   (stringp pkgind)
+                                   (eq package (find-package pkgind))
+                                   (satisfies-predicate name pkgind))
+                              (setf on-or-off :off) ; set remove qualifiers
+                              (go again))
+                             ((and (eq on-or-off :unknown)
+                                   (eq :current pkgind)
+                                   (satisfies-predicate name current-package))
+                              (let* ((sym (find-symbol name
+                                                       current-package))
+                                     (pkg (symbol-package sym)))
+                                (when (eq pkg package)
+                                  (setf on-or-off :on) ; set add qualifiers
+                                  (go again))))
+                             ((and (eq :off on-or-off) ; remove qualifiers
+                                   (stringp pkgind)
+                                   (satisfies-predicate name pkgind))
+                              (let ((symbol-package
+                                      (symbol-package
+                                       (find-symbol name pkgind))))
+                                (return (eq symbol-package package))))
+                             ((and (eq :on on-or-off) ; add qualifiers
+                                   (eq :current pkgind)
+                                   (satisfies-predicate name current-package))
+                              (let ((symbol-package
+                                      (symbol-package
+                                       (find-symbol name current-package))))
+                                (return (eq symbol-package package))))
+                             (t nil)))))))))
+      (format *debug-io* "~{; ~S~%~}" locs)
+      (case on-or-off
+        (:on (let ((qualifier (string-downcase
+                               (shortest-package-name-loc package))))
+               (mapcar (lambda (x)
+                         (destructuring-bind (pos name pkgind &rest rest)
+                             x
+                           (let ((sym (find-symbol name current-package)))
+                             (list pos :insert (concatenate 'string
+                                                            qualifier
+                                                            (symbol-package-markers-loc
+                                                             sym package))))))
+                       locs)))
+        (:off (mapcar (lambda (x)
+                        (destructuring-bind (pos name pkgi pkgmarker)
+                            x
+                          (list pos :delete (+ (length pkgi)
+                                               (length pkgmarker)))))
+                      locs))))))
