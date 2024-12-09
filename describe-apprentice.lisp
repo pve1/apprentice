@@ -24,6 +24,16 @@
                 current)))
     t))
 
+(defun describe-toggle-package-qualifier (apprentice symbol buffer)
+  (alexandria:when-let* ((pkg (symbol-package symbol))
+                         (pred (lambda (sym)
+                                 (eq symbol sym)))
+                         (edits (compute-edits-for-toggle-qualifier
+                                 (emacs-buffer-string buffer)
+                                 pkg
+                                 :symbol-predicate pred)))
+    (emacs-perform-edits buffer edits)))
+
 (defun describe-apprentice-has-toggle-p (symbol)
   (let* ((nothing (load-time-value '#:nothing))
          (other-value (get symbol
@@ -148,6 +158,20 @@
                                      (find-package ,(package-name *package*)))
                   :stream stream
                   :redisplay t))))
+        ;; Qualifier
+        (when (and (symbolp object)
+                   (symbol-package object)
+                   (not (keywordp object)))
+          (space)
+          (put-lisp-button-here
+           ap
+           "[QUAL]"
+           `(describe-toggle-package-qualifier
+             *button-apprentice*
+             ',object
+             ,(buffer-context-property :buffer-name))
+           :stream stream
+           :redisplay t))
         ;; Makunbound
         (when (and (boundp object)
                    (not (keywordp object)))
