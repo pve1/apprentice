@@ -31,6 +31,17 @@
                       :initform nil))
   (:documentation ""))
 
+(defun find-symbol-eclector (symbol-name package-indicator
+                             &optional (current-package *package*))
+  (multiple-value-bind (symbol status)
+      (case package-indicator
+        (:current (find-symbol symbol-name current-package))
+        (:keyword (find-symbol symbol-name (find-package :keyword)))
+        ((nil) (values (make-symbol symbol-name)
+                       nil))
+        (t (find-symbol symbol-name package-indicator)))
+    (values symbol status)))
+
 (defmethod eclector.reader:evaluate-expression
     ((client locate-symbols-client) expression)
   expression)
@@ -77,7 +88,8 @@
   (let ((*locate-symbols-client* client))
     (funcall (interpret-symbol-function client)
              symbol-name
-             package-indicator)))
+             package-indicator)
+    (find-symbol-eclector symbol-name package-indicator)))
 
 ;; Whoever uses this should bind *package* first.
 (defun In-package-form-fn (form)
