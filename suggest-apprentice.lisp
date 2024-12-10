@@ -508,9 +508,9 @@
                        :post-insert-elisp-form `(search-backward "_")))
           ;; Check-type
           (if (find-class object nil)
-              (suggest #?{(check-type ${downcased} _)}
-                       :post-insert-elisp-form `(search-backward "_"))
               (suggest #?{(check-type _ ${downcased})}
+                       :post-insert-elisp-form `(search-backward "_"))
+              (suggest #?{(check-type ${downcased} _)}
                        :post-insert-elisp-form `(search-backward "_"))))
         (alexandria:when-let*
             ((class (find-class object nil))
