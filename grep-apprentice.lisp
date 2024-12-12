@@ -90,6 +90,24 @@
      ap "[REPLACE]" `(eval-in-emacs ',elisp-form)
      :offset offset)))
 
+(defmethod apprentice-create-ephemerals ((apprentice grep-apprentice))
+  ;; Clicking jumps to the next match.
+  (create-ephemeral-elisp-function
+   apprentice 'grep-apprentice-button
+   '(lambda (symbol-name filename)
+     (progn (find-file-other-window filename)
+            (condition-case
+             nil
+             (progn
+               (search-forward symbol-name)
+               (slime-flash-region
+                (match-beginning 0)
+                (match-end 0)
+                0.5)
+               (end-of-line))
+             (error (beginning-of-buffer)))
+            (other-window 1)))))
+
 ;;; Note: depends on slime-flash-region
 (defmethod apprentice-update ((apprentice grep-apprentice)
                               (object symbol))
@@ -102,10 +120,12 @@
                 (truename f))))
           (results)
           (offset *standard-output*))
+      ;; Collect files
       (with-output-to-string (*standard-output*)
         (if (recursive apprentice)
             (grep-apprentice-walk-lisp-files
-             (lambda (x) (push x files))
+             (lambda (x)
+               (push x files))
              (or (path apprentice)
                  buffer-context-filename
                  ".")
@@ -116,22 +136,9 @@
                               "*.lisp"
                               buffer-context-filename)
                              "*.lisp"))))
-        ;; Clicking jumps to the next match.
-        (create-ephemeral-elisp-function
-         apprentice 'grep-apprentice-button
-         '(lambda (symbol-name filename)
-           (progn (find-file-other-window filename)
-                  (condition-case
-                   nil
-                   (progn
-                     (search-forward symbol-name)
-                     (slime-flash-region
-                      (match-beginning 0)
-                      (match-end 0)
-                      0.5)
-                     (end-of-line))
-                   (error (beginning-of-buffer)))
-                  (other-window 1))))
+        ;; Setup ephemerals
+        (apprentice-create-ephemerals apprentice)
+        ;; Perform the grep
         (dolist (file files)
           (let ((count (count-matching-lines string file)))
             (unless (zerop count)
@@ -142,6 +149,7 @@
                           count
                           (namestring file))
                     results))))
+        ;; Print results
         (fresh-line)
         (princ "Mentions: ")
         (when results
