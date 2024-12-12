@@ -10,7 +10,9 @@
 (defvar *debug-suggestions* nil)
 
 (defclass Suggest-apprentice ()
-  ())
+  ((separatorp :initarg :separatorp
+               :accessor separatorp-sg
+               :initform nil)))
 
 (defclass Suggestion ()
   ((string :initarg :string
@@ -106,7 +108,8 @@
                                         #\newline)
             (terpri))
           (unless (< (decf mini-separators) 1)
-            (format t "- - - - - - - - - - - - - - - -~%"))))
+            (when (separatorp-sg ap)
+              (format t "- - - - - - - - - - - - - - - -~%")))))
       (push-description-property
        `(indent-region ,begin ,(file-position stream))
        :last)
