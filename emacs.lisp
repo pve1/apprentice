@@ -6,8 +6,15 @@
 
 (in-package :apprentice) cx
 
-(defun eval-in-emacs (form)
-  (swank:eval-in-emacs form))
+(defun eval-in-emacs (form &optional buffer)
+  (if buffer
+      (swank:eval-in-emacs
+       `(with-current-buffer ,buffer
+          ,form))
+      (swank:eval-in-emacs form)))
+
+(defun eval-in-emacs-current-buffer (form)
+  (eval-in-emacs form (buffer-context-property :buffer-name)))
 
 (defun process-form-for-emacs (form)
   (swank::process-form-for-emacs form))
