@@ -341,11 +341,11 @@ than its second argument."
             locs)))
 
 (defun compute-edits-for-toggle-qualifier (file package-name
-                                           &key symbol-predicate)
+                                           &key (symbol-predicate
+                                                 (constantly t)))
   (flet ((satisfies-predicate (name pkgind)
-           (when symbol-predicate
-             (funcall symbol-predicate
-                      (find-symbol name pkgind)))))
+           (funcall symbol-predicate
+                    (find-symbol name pkgind))))
     (let* ((package (find-package package-name))
            (current-package *package*)
            (on-or-off :unknown)
