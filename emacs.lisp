@@ -34,6 +34,8 @@
 (defun Emacs-message (object)
   (eval-in-emacs `(message ,(princ-to-string object))))
 
+;;; Buffer string
+
 (defmethod Emacs-buffer-string (buffer-form &optional begin end)
   (let ((b (if begin
                (1+ begin)
