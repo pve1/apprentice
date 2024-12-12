@@ -1,4 +1,5 @@
 ;;;; Requires
+;;;;   alexandria
 ;;;;   "symbols"
 
 ;;;; Functions to make Emacs do things.
