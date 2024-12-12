@@ -63,31 +63,32 @@
 
 (defmethod Grep-apprentice-insert-replace-button (ap from files
                                                   &key offset)
-  (put-elisp-button-here
-   ap "[REPLACE]"
-   `(let ((replacement (read-from-minibuffer "Replacement: "
-                                             ,from))
-          (files ',(reverse (mapcar #'namestring files)))
-          (orig-buf (current-buffer)))
-      (dolist (file ',(reverse (mapcar #'namestring files)))
-        (let ((buf (find-file-noselect file)))
-          (when buf
-            (switch-to-buffer buf)
-            (unwind-protect
-                 (progn (setf apprentice-inhibit-update-p t)
-                        (beginning-of-buffer)
-                        (query-replace
-                         ,from
-                         replacement nil)
-                        t)
-              (setf apprentice-inhibit-update-p nil)
-              (switch-to-buffer orig-buf)))))
-      (when (y-or-n-p (format "Save %s buffers? "
-                              (length files)))
-        (dolist (file files)
-          (with-current-buffer (get-file-buffer file)
-            (save-buffer)))))
-   :offset offset))
+  (let ((elisp-form
+          `(let ((replacement (read-from-minibuffer "Replacement: "
+                                                    ,from))
+                 (files ',(reverse (mapcar #'namestring files)))
+                 (orig-buf apprentice-buffer-name))
+             (dolist (file files)
+               (let ((buf (find-file-noselect file)))
+                 (when buf
+                   (switch-to-buffer buf)
+                   (unwind-protect
+                        (progn (setf apprentice-inhibit-update-p t)
+                               (beginning-of-buffer)
+                               (query-replace
+                                ,from
+                                replacement nil)
+                               t)
+                     (setf apprentice-inhibit-update-p nil)
+                     (switch-to-buffer orig-buf)))))
+             (when (y-or-n-p (format "Save %s buffers? "
+                                     (length files)))
+               (dolist (file files)
+                 (with-current-buffer (get-file-buffer file)
+                   (save-buffer)))))))
+    (put-lisp-button-here
+     ap "[REPLACE]" `(eval-in-emacs ',elisp-form)
+     :offset offset)))
 
 ;;; Note: depends on slime-flash-region
 (defmethod apprentice-update ((apprentice grep-apprentice)
