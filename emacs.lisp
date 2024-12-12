@@ -94,3 +94,46 @@
                         (list pos :insert string)))
                     position-string-pairs)))
     (emacs-perform-edits file ops reindent)))
+
+;;; Defun parameters
+
+(defun partial-defun-string-emc (buffer-form &optional position)
+  (eval-in-emacs
+   `(with-current-buffer ,buffer-form
+      (let ((end (or ,position (point))))
+        (save-excursion
+         (beginning-of-defun)
+         (buffer-substring-no-properties (point) end))))))
+
+(defun partial-defun-emc (buffer &optional position)
+  (let* ((substring (partial-defun-string-emc buffer position))
+         (forms))
+    (when (eql #\( (alexandria:first-elt substring))
+      (with-input-from-string (s substring :start 1)
+        (ignore-errors
+         (loop :for form = (read s nil s)
+               :until (eq form s)
+               :do (push form forms))))
+      (setf forms (nreverse forms)))
+    forms))
+
+(defun Emacs-defun-lambda-list (buffer &optional position)
+  (let ((defun (partial-defun-emc buffer position)))
+    (case (car defun)
+      (defun (third defun))
+      (defmacro (third defun))
+      ;; Skip method qualifiers
+      (defmethod (loop :for form :in (nthcdr 2 defun)
+                       :when (listp form)
+                       :return form)))))
+
+;; Only defun currently.
+(defun Emacs-defun-parameters (buffer &optional position)
+  (let ((lambda-list (emacs-defun-lambda-list buffer position)))
+    (multiple-value-bind (req optional rest kw aok aux keyp)
+        (alexandria:parse-ordinary-lambda-list lambda-list)
+      (append req
+              (mapcar #'car optional)
+              (alexandria:ensure-list rest)
+              (mapcar #'cadar kw)
+              (mapcar #'car aux)))))
