@@ -170,8 +170,7 @@
              *button-apprentice*
              ',object
              ,(buffer-context-property :buffer-name))
-           :stream stream
-           :redisplay t))
+           :stream stream))
         ;; Makunbound
         (when (and (boundp object)
                    (not (keywordp object)))

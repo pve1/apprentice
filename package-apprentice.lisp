@@ -76,8 +76,7 @@
                             `(package-apprentice-toggle-prefix
                               *button-apprentice*
                               ',symbol
-                              ,(buffer-context-property :buffer-name))
-                            :redisplay t)
+                              ,(buffer-context-property :buffer-name)))
       (princ " ")
       (put-lisp-button-here ap
                             "[DEL]"
