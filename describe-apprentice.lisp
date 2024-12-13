@@ -80,7 +80,7 @@
         (when (eq pkg (symbol-package symbol))
           (push name to-export))))
     (export to-export symbol-package)
-    (format *debug-io* "; Exported ~{~A~^, ~}.~%" to-export)
+    (format *debug-io* "~&; Exported ~{~A~^, ~}.~%" to-export)
     to-export))
 
 (defmethod describe-with-apprentice ((ap describe-apprentice)

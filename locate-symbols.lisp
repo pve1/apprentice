@@ -388,7 +388,7 @@ than its second argument."
                                        (find-symbol name current-package))))
                                 (return (eq symbol-package package))))
                              (t nil)))))))))
-      (format *debug-io* "~{; ~S~%~}" locs)
+      (format *debug-io* "~&~{; ~S~%~}" locs)
       (case on-or-off
         (:on (let ((qualifier (string-downcase
                                (shortest-package-name-loc package))))
