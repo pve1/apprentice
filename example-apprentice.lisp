@@ -9,25 +9,27 @@
 ;;;;   "method-apprentice"
 ;;;;   "toplevel-apprentice"
 ;;;;   "suggest-apprentice"
+;;;;   "package-apprentice"
 ;;;;   "buttons"
 
 (in-package :apprentice) cx
 
 (defclass Example-apprentice (apprentice-gathering)
-  ((toplevel-apprentices
-    :initarg :toplevel-apprentices
-    :accessor Toplevel-apprentices
-    :initform nil))
+  ((overview-apprentices :initarg :overview-apprentices
+                         :accessor overview-apprentices
+                         :initform nil))
   (:documentation ""))
 
 (defmethod initialize-instance :after ((e example-apprentice)
-                                       &key toplevel-apprentices)
-  (setf (toplevel-apprentices e)
-        (mapcar 'instantiate-maybe toplevel-apprentices)))
+                                       &key overview-apprentices)
+  (setf (overview-apprentices e)
+        (mapcar 'instantiate-maybe overview-apprentices)))
 
+;; If the point is not on a symbol or number, use the overview
+;; apprentices instead of the normal apprentices.
 (defmethod apprentices-based-on-input ((ap example-apprentice)
                                        (input looking-at-character))
-  (toplevel-apprentices ap))
+  (overview-apprentices ap))
 
 ;; Ad-hoc apprentice to reload this file.
 (defun example-apprentice-reload (object stream)
@@ -92,7 +94,7 @@
                                 :history-length 5
                                 :proximity-cutoff 60)))
     (make-instance 'example-apprentice
-      :toplevel-apprentices
+      :overview-apprentices
       (list 'suggest-apprentice
             activity-apprentice
             'wide-toplevel-apprentice
@@ -101,7 +103,7 @@
       (list 'suggest-apprentice
             activity-apprentice
             'describe-apprentice
-            #'example-describe-package-maybe
+            'package-apprentice
             'value-apprentice
             'grep-apprentice
             (make-instance 'apropos-apprentice
