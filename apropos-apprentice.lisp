@@ -168,8 +168,8 @@
   (let ((symbols (apropos-export-symbols
                   *button-apprentice*
                   symbol)))
-    (let ((*package* (find-package :keyword)))
-      (when symbols
+    (when symbols
+      (let ((*package* (find-package :keyword)))
         (format *debug-io* "~&; Exported: ~{~%; ~S~}~%"
                 symbols)))
     (emacs-message
@@ -182,9 +182,10 @@
   (let ((symbols (apropos-unexport-symbols
                   *button-apprentice*
                   symbol)))
-    (let ((*package* (find-package :keyword)))
-      (format *debug-io* "~&; Unexported ~{; ~S~^~%~}"
-              symbols))
+    (when symbols
+      (let ((*package* (find-package :keyword)))
+        (format *debug-io* "~&; Unexported: ~{~%; ~S~}~%"
+                symbols)))
     (emacs-message
      (format nil "Unexported ~A symbols from ~S."
              (length symbols)
@@ -195,9 +196,10 @@
   (let ((symbols (apropos-import-symbols
                   *button-apprentice*
                   symbol)))
-    (let ((*package* (find-package :keyword)))
-      (format *debug-io* "~&; Imported ~{; ~S~^~%~}"
-              symbols))
+    (when symbols
+      (let ((*package* (find-package :keyword)))
+        (format *debug-io* "~&; Imported: ~{~%; ~S~}~%"
+                symbols)))
     (emacs-message
      (format nil "Imported ~A symbols into ~S."
              (length symbols)
@@ -208,9 +210,10 @@
   (let ((symbols (apropos-unintern-symbols
                   *button-apprentice*
                   symbol)))
-    (let ((*package* (find-package :keyword)))
-      (format *debug-io* "~&; Uninterned ~{; ~S~^~%~}"
-              symbols))
+    (when symbols
+      (let ((*package* (find-package :keyword)))
+        (format *debug-io* "~&; Uninterned: ~{~%; ~S~}~%"
+                symbols)))
     (emacs-message
      (format nil "Uninterned ~A symbols from ~S."
              (length symbols)
