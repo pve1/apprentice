@@ -163,15 +163,19 @@
       (unexport other-unexported package)
       (append present other-unexported))))
 
+(defun maybe-report-button-pressed-apa (label symbols)
+  (when symbols
+    (let ((*package* (find-package :keyword)))
+      (format *debug-io* "~&; ~A: ~{~%; ~S~}~%"
+              label
+              symbols))))
+
 (defmethod button-pressed ((ap apropos-apprentice) (button (eql 'export))
                            &key symbol)
   (let ((symbols (apropos-export-symbols
                   *button-apprentice*
                   symbol)))
-    (when symbols
-      (let ((*package* (find-package :keyword)))
-        (format *debug-io* "~&; Exported: ~{~%; ~S~}~%"
-                symbols)))
+    (maybe-report-button-pressed-apa "Export" symbols)
     (emacs-message
      (format nil "Exported ~A symbols from ~S."
              (length symbols)
@@ -182,10 +186,7 @@
   (let ((symbols (apropos-unexport-symbols
                   *button-apprentice*
                   symbol)))
-    (when symbols
-      (let ((*package* (find-package :keyword)))
-        (format *debug-io* "~&; Unexported: ~{~%; ~S~}~%"
-                symbols)))
+    (maybe-report-button-pressed-apa "Unexport" symbols)
     (emacs-message
      (format nil "Unexported ~A symbols from ~S."
              (length symbols)
@@ -196,10 +197,7 @@
   (let ((symbols (apropos-import-symbols
                   *button-apprentice*
                   symbol)))
-    (when symbols
-      (let ((*package* (find-package :keyword)))
-        (format *debug-io* "~&; Imported: ~{~%; ~S~}~%"
-                symbols)))
+    (maybe-report-button-pressed-apa "Import" symbols)
     (emacs-message
      (format nil "Imported ~A symbols into ~S."
              (length symbols)
@@ -210,10 +208,7 @@
   (let ((symbols (apropos-unintern-symbols
                   *button-apprentice*
                   symbol)))
-    (when symbols
-      (let ((*package* (find-package :keyword)))
-        (format *debug-io* "~&; Uninterned: ~{~%; ~S~}~%"
-                symbols)))
+    (maybe-report-button-pressed-apa "Unintern" symbols)
     (emacs-message
      (format nil "Uninterned ~A symbols from ~S."
              (length symbols)
