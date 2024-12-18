@@ -126,7 +126,7 @@
        (substring (emacs-current-buffer-string begin end))
        (single-line (not (find #\newline substring))))
     ;; Use region
-    (format *debug-io* "~&; ~A~%" substring)
+    ;; (format *debug-io* "~&; ~A~%" substring)
     (return-from apprentice-update
       (apprentice-update-with-string apprentice substring)))
   (call-next-method))
