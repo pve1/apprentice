@@ -21,9 +21,10 @@
           (list ap callback *package* *buffer-context*))
     id))
 
+;; This form gets sent to Emacs for each lisp button.
 (defmethod make-button-callback-form (ap when-clicked)
   `(eval-button-callback
-    ,(make-button-callback ap when-clicked)))
+    ,(make-button-callback ap when-clicked))) ; an integer id
 
 (defun lookup-button-callback (id)
   (lookup-button-callback-with-apprentice *apprentice* id))
@@ -152,9 +153,9 @@
 (defmethod Create-ephemeral-elisp-function (apprentice symbol lambda-form)
   (push-description-property
    (list 'ephemeral-function
-              :name symbol
-              :lambda-string (process-form-for-emacs
-                              lambda-form))))
+         :name symbol
+         :lambda-string (process-form-for-emacs
+                         lambda-form))))
 
 (defgeneric Buttons (apprentice)
   (:documentation "Returns the buttons of an apprentice."))
