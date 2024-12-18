@@ -7,6 +7,9 @@
 
 - Load ~apprentice.el~ in Emacs.
 - Load the ~apprentice/example-apprentice~ system in Lisp.
+- While not strictly necessary, some useful features (notably the
+  suggestions in the example apprentice) require
+  slime-enable-evaluate-in-emacs to be non-nil.
 - Bind the following keys:
 
 #+begin_src emacs-lisp
