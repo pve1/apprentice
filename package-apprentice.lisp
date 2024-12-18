@@ -1,5 +1,6 @@
 ;;;; Requires
 ;;;;   apprentice
+;;;;   alexandria
 ;;;;   "buttons"
 ;;;;   "locate-symbols"
 
