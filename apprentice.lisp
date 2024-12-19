@@ -50,6 +50,8 @@
 
 (in-package :apprentice) cx ; <-- enables capitalized export
 
+;;; Variables
+
 (defvar *Apprentice* #'describe
   "The currently active apprentice used for generating descriptions.
 Should implement DESCRIBE-WITH-APPRENTICE.")
@@ -70,6 +72,8 @@ properties are provided.
 
 Examples: :buffer-name :point :region :package :filename")
 
+(makunbound '*buffer-context*)
+
 (defvar *Description-stream* nil
   "Bound to the string stream representing the description currently
 being built.  This is the stream parameter of
@@ -79,7 +83,7 @@ DESCRIBE-WITH-APPRENTICE.")
   "List of functions called with no argument before calling
 describe-with-apprentice.")
 
-(defvar *description-properties*
+(defvar *description-properties* nil
   "This variable contains extra information needed to render a
 description.  It gets sent to Emacs alongside the description string.
 It can be used to place buttons, add faces, indent or font lock
@@ -88,11 +92,15 @@ properties.
 
 See apprentice-insert in apprentice.el.")
 
+(makunbound '*description-properties*)
+
 (defvar *previous-object* nil
   "The previous input object given to DESCRIBE-WITH-APPRENTICE.")
 
 (defvar *previous-description* nil
   "The previous description produced by DESCRIBE-WITH-APPRENTICE.")
+
+;;; Basics
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:documentation "This function should write a description of OBJECT
@@ -137,6 +145,18 @@ and that it isn't too big."
               *previous-description* desc))
       :max-size-exceeded))
 
+(defun Push-description-property (property &optional where)
+  "Adds PROPERTY to the the list of description properties about to be
+sent over to Emacs.  PROPERTY should be a list whose car is a symbol
+indicating the type of property.
+
+Example: (lisp-button 10 17 \"[HELLO]\" ...)"
+  (check-type where (member nil :last))
+  (if (eq where :last)
+      (let ((last (last *description-properties*)))
+        (rplacd last (cons property nil)))
+      (push property *description-properties*)))
+
 (defun Buffer-context-property (property)
   "Queries the current buffer context for PROPERTY."
   (getf *buffer-context* property))
@@ -154,18 +174,6 @@ and that it isn't too big."
                          package
                          symbol))))
     (apply fun args)))
-
-(defun Push-description-property (property &optional where)
-  "Adds PROPERTY to the the list of description properties about to be
-sent over to Emacs.  PROPERTY should be a list whose car is a symbol
-indicating the type of property.
-
-Example: (lisp-button 10 17 \"[HELLO]\" ...)"
-  (check-type where (member nil :last))
-  (if (eq where :last)
-      (let ((last (last *description-properties*)))
-        (rplacd last (cons property nil)))
-      (push property *description-properties*)))
 
 ;;;; Describing presentations.
 
@@ -259,10 +267,15 @@ SWANK:LOOKUP-PRESENTED-OBJECT is defined. "
   "Tries to return the \"current\" package.  Uses the :package buffer
 context property, which is the result of calling
 slime-current-package. If that fails, returns *package*."
+  (alexandria:when-let ((pkg (buffer-context-property
+                              'suggested-current-package)))
+    (return-from suggested-current-package pkg))
   (let* ((pkg-string (buffer-context-property :package))
          (*read-eval* nil)
          (pkg (when pkg-string
                 (find-package (read-from-string pkg-string)))))
+    (setf (getf *buffer-context* 'suggested-current-package)
+          pkg)
     (or pkg *package*)))
 
 (defun suggested-current-package-name ()
@@ -274,7 +287,8 @@ slime-current-package. If that fails, returns *package*."
 into a symbol."))
 
 (defmethod resolve-symbol (apprentice symbol-name)
-  (let* ((*package* (suggested-current-package)))
+  (let* ((*package* (suggested-current-package))
+         (*read-eval* nil))
     (with-eclector-client 'default-resolve-symbol
       (catch 'symbol
         (eclector.reader:read-from-string symbol-name)))))
@@ -339,8 +353,9 @@ SYMBOL-NAME."
   (:documentation
    "Reads a string containing a package designator, e.g. \":foo\".")
   (:method (apprentice package-designator-string)
-    (read-from-string-with-apprentice apprentice
-                                      package-designator-string)))
+    (let ((*read-eval* nil))
+      (read-from-string-with-apprentice apprentice
+                                        package-designator-string))))
 
 ;;; Package-designator is the string returned by
 ;;; (slime-current-package). It must be READ to get the real
