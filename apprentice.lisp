@@ -60,7 +60,8 @@ RETURN-DESCRIPTION.")
 
 (defvar *Force-return-description* nil
   "If non-nil, return a description even if the current object and its
-description are identical to the previous object and description.")
+description are identical to the previous object and description. Is
+bound by Emacs in certain situations.")
 
 (defvar *Buffer-context* nil
   "A plist which may contain properties of the current Emacs buffer.
@@ -87,10 +88,19 @@ properties.
 
 See apprentice-insert in apprentice.el.")
 
-(defvar *previous-object* nil)
-(defvar *previous-description* nil)
+(defvar *previous-object* nil
+  "The previous input object given to DESCRIBE-WITH-APPRENTICE.")
+
+(defvar *previous-description* nil
+  "The previous description produced by DESCRIBE-WITH-APPRENTICE.")
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
+  (:documentation "This function should write a description of OBJECT
+to STREAM. The description will be displayed in the Apprentice Emacs
+window.  The generation of the description should be efficient enough
+to allow this function to be called roughly every time the point
+becomes idle, or periodically, according to the emacs variable
+APPRENTICE-POLLING-FREQUENCY.")
   (:method (apprentice object stream)
     nil)
   (:method (apprentice (object cons) stream)
@@ -101,13 +111,7 @@ See apprentice-insert in apprentice.el.")
                           (rest object)
                           stream))
   (:method ((apprentice function) object stream)
-    (funcall apprentice object stream))
-  (:documentation "This function should write a description of OBJECT
-to STREAM. The description will be displayed in the Apprentice Emacs
-window.  The generation of the description should be efficient enough
-to allow this function to be called roughly every time the point
-becomes idle, or periodically, according to the emacs variable
-APPRENTICE-POLLING-FREQUENCY."))
+    (funcall apprentice object stream)))
 
 ;; May get removed
 (defgeneric describe-tagged-list (apprentice tag plist stream)
@@ -300,14 +304,14 @@ SYMBOL-NAME."
 ;;;; Describing forms
 
 (defgeneric Read-from-string-with-apprentice (apprentice string)
+  (:documentation "Reads from STRING in the context of APPRENTICE.")
   (:method (apprentice string)
-    (read-from-string string))
-  (:documentation "Reads from STRING in the context of APPRENTICE."))
+    (read-from-string string)))
 
 (defgeneric Eval-with-apprentice (apprentice form)
+  (:documentation "Evaluates FORM in the context of APPRENTICE.")
   (:method (apprentice form)
-    (eval form))
-  (:documentation "Evaluates FORM in the context of APPRENTICE."))
+    (eval form)))
 
 (defun describe-form-separator (label &optional (width 60) newline)
   "Generates the separator printed by DESCRIBE-FORM-WITH-APPRENTICE."
