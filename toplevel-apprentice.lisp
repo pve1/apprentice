@@ -217,8 +217,9 @@
     (put-lisp-button-here
      ap
      "[SORT]"
-     '(setf (sort-lines-p *button-apprentice*)
-       (not (sort-lines-p *button-apprentice*)))
+     `(emacs-message
+       (setf (sort-lines-p *button-apprentice*)
+             (not (sort-lines-p *button-apprentice*))))
      :redisplay t)
     (princ " ")
     ;; Todo: show only present symbols
