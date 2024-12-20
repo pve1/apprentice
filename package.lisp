@@ -1,27 +1,12 @@
+;;;; Requires
+;;;;   capitalized-export
 
-(defpackage #:slime-apprentice
-  (:use #:cl)
-  (:export "*APPRENTICE*"
-           "*BUFFER-CONTEXT*"
-           "*FORCE-RETURN-DESCRIPTION*"
-           "*MAX-DESCRIPTION-SIZE*"
-           "DESCRIBE-WITH-APPRENTICE"
-           "RESOLVE-SYMBOL"
-           "SYMBOL-DESCRIPTION"
-           "PRESENTATION-DESCRIPTION"
-           "EVAL-WITH-APPRENTICE"
-           "READ-FROM-STRING-WITH-APPRENTICE"
-           "READ-PACKAGE-DESIGNATOR"
-           "FORM-DESCRIPTION"
-           "DESCRIBE-FORM-WITH-APPRENTICE"
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :apprentice)
+    (make-package :apprentice :use '(:cl))))
 
-           "DESCRIBE-APPRENTICE"
-           "VALUE-APPRENTICE"
-           "*CACHING-APPRENTICE-DEFAULT-UPDATE-INTERVAL*"
-           "CACHING-APPRENTICE"
-           "APROPOS-APPRENTICE"
-           "GREP-APPRENTICE"
-           "APPRENTICE-GATHERING"
-           "APPRENTICE-GATHERING-DIVIDER"))
+(in-package :apprentice)
 
-(in-package :slime-apprentice)
+(define-symbol-macro cx
+    (eval-when (:compile-toplevel :load-toplevel :execute)
+      (setf *readtable* (capitalized-export:make-capitalized-export-readtable))))

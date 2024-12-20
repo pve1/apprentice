@@ -1,10 +1,31 @@
 
-* Slime Apprentice
+* Apprentice Mode Quickstart
 
-- Load or byte compile ~slime-apprentice.el~ in Emacs.
-- Load the ~slime-apprentice~ system in Lisp.
+- Download and install the dependencies
+  - https://github.com/pve1/extensible-inferred-system
+  - https://github.com/pve1/capitalized-export
 
-Then, in a lisp buffer do:
+- Load ~apprentice.el~ in Emacs.
+- Load the ~apprentice/example-apprentice~ system in Lisp.
+- While not strictly necessary, some useful features (notably the
+  suggestions in the example apprentice) require
+  slime-enable-evaluate-in-emacs to be non-nil.
+- Bind the following keys:
 
-~M-x slime-apprentice-describe~
+#+begin_src emacs-lisp
+(define-key lisp-mode-map (kbd "C-c z") 'apprentice-describe)
+(define-key lisp-mode-map (kbd "C-c Z") 'apprentice-describe-form)
+#+end_src
 
+- Open a lisp buffer and press ~C-c z~ to bring up the apprentice
+  buffer.
+  - Move the point around to see what it does.
+  - Try typing something at the toplevel to see some
+    suggestions. Location matters, e.g. at the beginning of a buffer
+    it will suggest a defpackage form. When creating slots for a
+    class, it will show slot-related suggestions.
+  - Things highlighted with colors in the apprentice buffer are clickable
+    with RET.
+- NOTE: ~apprentice-describe-form~ will repeatedly evaluate the form
+  behind the point, so don't use it on (delete-file ...) or other
+  dangerous forms. Try it on ~(random 10)~ to get an idea.

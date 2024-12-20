@@ -1,0 +1,119 @@
+;;;; Requires
+;;;;   closer-mop
+;;;;   "apprentice"
+;;;;   "apprentice-gathering"
+;;;;   "apropos-apprentice"
+;;;;   "grep-apprentice"
+;;;;   "describe-apprentice"
+;;;;   "value-apprentice"
+;;;;   "method-apprentice"
+;;;;   "toplevel-apprentice"
+;;;;   "suggest-apprentice"
+;;;;   "package-apprentice"
+;;;;   "buttons"
+
+(in-package :apprentice) cx
+
+(defclass Example-apprentice (apprentice-gathering)
+  ((overview-apprentices :initarg :overview-apprentices
+                         :accessor overview-apprentices
+                         :initform nil))
+  (:documentation ""))
+
+(defmethod initialize-instance :after ((e example-apprentice)
+                                       &key overview-apprentices)
+  (setf (overview-apprentices e)
+        (mapcar 'instantiate-maybe overview-apprentices)))
+
+;; If the point is not on a symbol or number, use the overview
+;; apprentices instead of the normal apprentices.
+(defmethod apprentices-based-on-input ((ap example-apprentice)
+                                       (input looking-at-character))
+  (overview-apprentices ap))
+
+;; Ad-hoc apprentice to reload this file.
+(defun example-apprentice-reload (object stream)
+  (declare (ignore object))
+  (princ "                         " stream)
+  (put-lisp-button-here
+   *apprentice*
+   "[RELOAD]"
+   '(asdf:load-system "apprentice/example-apprentice" :force t)
+   :stream stream))
+
+;; Ad-hoc apprentice to describe packages when the point on a keyword
+;; or an uninterned symbol.
+(defun example-describe-package-maybe (object stream)
+  (when (and (or (keywordp object)
+                 (and (symbolp object)
+                      (null (symbol-package object))))
+             (find-package object))
+    (let ((*standard-output* stream)
+          (package (find-package object)))
+      (format t "~A names a package: " object)
+      (put-lisp-button-here *apprentice*
+                            "[DEL]"
+                            `(delete-package
+                              (find-package ',object))
+                            :redisplay t)
+      (princ " ")
+      (put-lisp-button-here *apprentice*
+                            "[CLREXT]"
+                            `(let ((pkg (find-package ',object))
+                                   (ext '()))
+                               (do-external-symbols (sym pkg)
+                                 (push sym ext))
+                               (unexport ext pkg))
+                            :redisplay t)
+      (princ " ")
+      (put-lisp-button-here *apprentice*
+                            "[CLRSYM]"
+                            `(loop :with pkg = (find-package ',object)
+                                   :for sym :being
+                                   :each :symbol
+                                   :in pkg
+                                   :do (unintern sym pkg))
+                            :redisplay t)
+      (terpri)
+      (terpri)
+      (describe package)
+      (format t "~%Export form:~2%")
+      (format t "(EXPORT '(~{~A~^~%          ~}))"
+              (sort (loop :for sym :being :each
+                          :external-symbol :in package
+                          :collect sym)
+                    #'string<))
+      t)))
+
+;; This is a good starting point for creating your own
+;; apprentice. Just copy and modify according to taste, then assign
+;; the resulting instance to *apprentice*.
+(defun Make-example-apprentice ()
+  (let* ((*caching-apprentice-default-update-interval* 2)
+         (activity-apprentice (make-instance 'activity-apprentice
+                                :history-length 5
+                                :proximity-cutoff 60)))
+    (make-instance 'example-apprentice
+      :overview-apprentices
+      (list 'suggest-apprentice
+            activity-apprentice
+            'wide-toplevel-apprentice
+            #'example-apprentice-reload)
+      :apprentices
+      (list 'suggest-apprentice
+            activity-apprentice
+            'describe-apprentice
+            'package-apprentice
+            'value-apprentice
+            'grep-apprentice
+            (make-instance 'apropos-apprentice
+              :min-length 2
+              :interesting-symbol-function
+              (lambda (sym)
+                ;; Ignore mixed case symbols.
+                (if (eq (symbol-package sym) *package*)
+                    (not (find-if #'lower-case-p
+                                  (symbol-name sym)))
+                    t)))))))
+
+(setf *apprentice* (make-example-apprentice))
