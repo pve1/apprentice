@@ -58,7 +58,7 @@
   (:documentation ""))
 
 (defmethod apprentice-update (apprentice input)
-  "")
+  nil)
 
 (defmethod Apprentice-update-maybe (apprentice input)
   (let ((can (apprentice-can-update-p apprentice input))
