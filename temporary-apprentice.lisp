@@ -19,7 +19,7 @@
   (funcall (describe-function ap) ap object stream))
 
 (defmethod describe-with-apprentice :around ((ap temporary-apprentice)
-                                             object 
+                                             object
                                              stream)
   (unwind-protect (call-next-method)
     (when (done ap)
@@ -30,7 +30,7 @@
     (setf apprentice (make-instance apprentice)))
   (setf *apprentice*
         (make-instance 'temporary-apprentice
-          :describe-function 
+          :describe-function
           (if describe-function
               (lambda (ap obj str)
                 (declare (ignore ap))
