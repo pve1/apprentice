@@ -15,6 +15,7 @@
 (define-key apprentice-mode-map (kbd "-") 'apprentice-slower-polling)
 (define-key apprentice-mode-map (kbd "m") 'apprentice-toggle-update-mode)
 (define-key apprentice-mode-map (kbd "e") 'apprentice-toggle-eager)
+(define-key apprentice-mode-map (kbd "p") 'apprentice-toggle-paused)
 (define-key apprentice-mode-map (kbd "M-.") 'slime-edit-definition)
 (define-key apprentice-mode-map [?	] 'apprentice-next-button) ; tab
 (define-key apprentice-mode-map
@@ -64,17 +65,18 @@
 (defvar-local apprentice-package nil)
 (defvar-local apprentice-looking-at nil)
 (defvar-local apprentice-locked-p nil)
+(defvar-local apprentice-paused-p nil)
 (defvar-local apprentice-ephemeral-functions nil)
 
 (defvar apprentice-help-line
-  (let ((s "  [q]:quit [l|L]:lock [-|+]:freq [e]:eager [m]:mode ")
+  (let ((s "  [q]:quit [l|L]:lock [-|+]:freq [p]:pause [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'face 'default 'font-lock-face 'default))
     (concat s s2)))
 
 (defvar apprentice-locked-help-line
-  (let ((s "  [q]:quit [-]|[+]:freq [m]:mode ")
+  (let ((s "  [q]:quit [-]|[+]:freq [p]:pause [m]:mode ")
         (s2 "\n"))
     (setf s (propertize s 'face 'fringe 'font-lock-face 'fringe))
     (setf s2 (propertize s2 'font-lock-face 'default 'font-lock-face 'default))
@@ -100,11 +102,52 @@
 
 ;;; Toggles
 
+(defun apprentice-toggle-paused ()
+  (interactive)
+  (if apprentice-paused-p
+      (progn
+        (setf apprentice-paused-p nil)
+        (message "Resumed.")
+        (apprentice-display-status "" "white"))
+    (when (apprentice-buffer-p (current-buffer))
+      (setf apprentice-paused-p t)
+      (apprentice-display-status "PAUSED" "red"))))
+
 (defun apprentice-toggle-eager ()
   (interactive)
   (message "Eager: %s"
            (setf apprentice-eager-p
                  (not apprentice-eager-p))))
+
+;;; Apprentice buffer
+
+(defun apprentice-display-status (text &optional color buf)
+  (save-excursion
+    (let ((buf (or buf (current-buffer))))
+      (when (apprentice-buffer-p buf)
+        (with-current-buffer buf
+          (goto-char (point-min))
+          (goto-char (next-single-char-property-change
+                      (point)
+                      'face))
+          (unless (= (char-after) ?\n)
+            (delete-region (point) (point-at-eol)))
+          (insert " ")
+          (insert (propertize
+                   text
+                   'face `(:foreground ,color)
+                   'font-lock-face `(:foreground ,color))))))))
+
+(defun apprentice-display-paused (&optional buf color)
+  (with-current-buffer (or buf (current-buffer))
+    (when (apprentice-buffer-p (current-buffer))
+      (setf apprentice-paused-p t)
+      (setf color (or color "red"))
+      (message "Paused")
+      (apprentice-display-status
+       (propertize " PAUSED"
+                   'face `(:foreground ,color)
+                   'font-lock-face `(:foreground ,color))))))
 
 ;;; Fontification
 
@@ -488,6 +531,11 @@
 (defun apprentice-window-p (win)
   (apprentice-buffer-p (window-buffer win)))
 
+(defun apprentice-paused-p (&optional buf)
+  (buffer-local-value
+   'apprentice-paused-p
+   (or buf (current-buffer))))
+
 (defun apprentice-faster-polling ()
   (interactive)
   (setf apprentice-polling-frequency
@@ -774,8 +822,25 @@
     (when (and (apprentice-buffer-p buf)
                (not (eql (current-buffer) buf))
                ;; Don't try to update if the timer has been cancelled.
+               apprentice-describe-timer
+               (not (apprentice-paused-p buf)))
+      (apprentice-update-apprentice-buffer buf))
+    ;; Display soft pause in continuous mode.
+    (when (and (eq apprentice-update-mode 'continuous)
+               (apprentice-buffer-p buf)
+               (eql (current-buffer) buf)
+               (not (apprentice-paused-p buf))
                apprentice-describe-timer)
-      (apprentice-update-apprentice-buffer buf))))
+      (apprentice-display-status "PAUSED" "yellow" buf))))
+
+(defun apprentice-soft-pause-live-window (window)
+  (let ((buf (window-buffer window)))
+    ;; Display soft pause in continuous mode.
+    (when (and (eq apprentice-update-mode 'continuous)
+               (apprentice-buffer-p buf)
+               (not (apprentice-paused-p buf))
+               apprentice-describe-timer)
+      (apprentice-display-status "PAUSED" "yellow" buf))))
 
 (defun apprentice-timer-function ()
   (interactive)
@@ -789,15 +854,28 @@
                       #'apprentice-window-p
                       nil t)))
            (apprentice-display-apprentice-buffer))
+          ;; If currently in a lisp buffer, update all apprentice
+          ;; buffers.
           ((and (or (eql major-mode 'lisp-mode)
                     (eql major-mode 'slime-repl-mode))
                 (get-buffer apprentice-buffer-name))
+           ;; Set the input unless we're monitoring a form.
            (unless (with-current-buffer (get-buffer
                                          apprentice-buffer-name)
                      (and apprentice-input
                           (eq 'form (car apprentice-input))))
              (apprentice-set-input-from-point-maybe))
            (walk-windows #'apprentice-update-if-live-window
+                         nil t))
+          ;; If currently in an apprentice buffer, update all
+          ;; apprentice buffers except the current one (which will be
+          ;; soft paused).
+          ((eql major-mode 'apprentice-mode)
+           (walk-windows #'apprentice-update-if-live-window
+                         nil t))
+          ;; Otherwise, in continuous mode, soft pause windows.
+          ((eq apprentice-update-mode 'continuous)
+           (walk-windows #'apprentice-soft-pause-live-window
                          nil t)))))
 
 (defun apprentice-reinitialize-continuous-timer ()
