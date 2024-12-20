@@ -4,7 +4,7 @@
 The purpose of Apprentice is to passively provide helpful information
 to the user based on the current state of a Lisp mode Emacs buffer.
 For instance, if the point is on a symbol, then the apprentice buffer
-might show the output of cl:describe for that symbol. Much more is
+might show the output of ~cl:describe~ for that symbol. Much more is
 possible, as demonstrated by the included example apprentice.
 
 - Download and install the dependencies
