@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
 (define-derived-mode apprentice-mode text-mode
-  "Slime apprentice")
+  "Apprentice")
 
 ;; Suggested key for apprentice-describe.
 ;; (define-key lisp-mode-map (kbd "C-c z") (quote apprentice-describe))
