@@ -10,20 +10,6 @@
 (defclass Describe-apprentice ()
   ())
 
-(defun describe-toggle-variable (symbol)
-  (let* ((nothing (load-time-value '#:nothing))
-         (other-value (get symbol
-                           'describe-apprentice-toggle-value
-                           nothing)))
-    (if (eq other-value nothing)
-        (setf (symbol-value symbol)
-              (not (symbol-value symbol)))
-        (let ((current (symbol-value symbol)))
-          (setf (symbol-value symbol) other-value
-                (get symbol 'describe-apprentice-toggle-value)
-                current)))
-    t))
-
 (defun describe-toggle-package-qualifier (apprentice symbol buffer)
   (alexandria:when-let* ((pkg (symbol-package symbol))
                          (pred (lambda (sym)
@@ -40,6 +26,20 @@
                            'describe-apprentice-toggle-value
                            nothing)))
     (not (eq other-value nothing))))
+
+(defun describe-toggle-variable (symbol)
+  (let* ((nothing (load-time-value '#:nothing))
+         (other-value (get symbol
+                           'describe-apprentice-toggle-value
+                           nothing)))
+    (if (eq other-value nothing)
+        (setf (symbol-value symbol)
+              (not (symbol-value symbol)))
+        (let ((current (symbol-value symbol)))
+          (setf (symbol-value symbol) other-value
+                (get symbol 'describe-apprentice-toggle-value)
+                current)))
+    t))
 
 (defun describe-remove-class-direct-methods (class)
   (dolist (method (closer-mop:specializer-direct-methods
