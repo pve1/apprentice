@@ -57,7 +57,7 @@
              (find-package symbol))
     (let ((*standard-output* stream)
           (package (find-package symbol)))
-      (format t "~A names a package: " symbol)
+      (format t "~A names a package: ~2%" symbol)
       (if (member package (package-use-list *package*))
           (put-lisp-button-here ap
                                 "[UNUSE]"
