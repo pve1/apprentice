@@ -711,6 +711,24 @@
           (push (apprentice-car-of-list) path))))
     path))
 
+(defun apprentice-position-in-current-form ()
+  (let ((n 0)
+        (i nil))
+    (save-excursion
+      (ignore-errors
+        (beginning-of-thing 'sexp)
+        (while (and (not (zerop (current-column)))
+                    (not (eql (point) i)))    ; Didn't move
+          (setf i (point))
+          (backward-sexp 1 nil)
+          (cl-incf n))))
+    n))
+
+(defun apprentice-current-form-path+pos ()
+  (let* ((path (apprentice-current-form-path))
+         (pos (apprentice-position-in-current-form)))
+    (list path pos)))
+
 (defun apprentice-enclosing-form-position ()
   (condition-case nil
       (save-excursion

@@ -64,14 +64,14 @@
 (defmethod describe-with-apprentice ((ap suggest-apprentice)
                                      object
                                      stream)
-  (let* ((path (suggest-get-current-path ap))
-         (suggestions (generate-suggestions ap object path))
+  (let* ((path+pos (suggest-get-current-path+pos ap))
+         (suggestions (generate-suggestions ap object path+pos))
          (begin (file-position stream))
          (*standard-output* stream))
     (when suggestions
       (apprentice-create-ephemerals ap)
-      (format t "Suggestions for ~A:~%" (if path
-                                            path
+      (format t "Suggestions for ~A:~%" (if (car path+pos)
+                                            path+pos
                                             "toplevel"))
       (terpri)
       (when *debug-suggestions*
@@ -166,6 +166,12 @@
      `(with-current-buffer ,buffer
         (apprentice-current-form-path)))))
 
+(defmethod Suggest-get-current-path+pos (ap)
+  (alexandria:when-let ((buffer (buffer-context-property :buffer-name)))
+    (eval-in-emacs
+     `(with-current-buffer ,buffer
+        (apprentice-current-form-path+pos)))))
+
 (defmethod Suggest-get-toplevel-name (ap)
   (alexandria:when-let ((buffer (buffer-context-property :buffer-name)))
     (eval-in-emacs
@@ -252,14 +258,16 @@
                      (map-tree-sg predicate fn (cdr tree))
                      nil)))))
 
-(defgeneric Generate-suggestions (ap object path)
+(defgeneric Generate-suggestions (ap object path+pos)
   (:method (ap object path)
     nil)
   (:documentation ""))
 
 ;; Hardcode suggestions for now.
-(defmethod generate-suggestions (ap (object symbol) path)
+(defmethod generate-suggestions (ap (object symbol) path+pos)
   (let* ((suggestions ())
+         (path (first path+pos))
+         (position (second path+pos))
          (name (string-downcase (symbol-name object)))
          (name-looks-like-special-variable
            (and (alexandria:starts-with #\* name)
@@ -498,8 +506,9 @@
                    `(progn
                       (apprentice-goto-toplevel)
                       (beginning-of-line)))))
-      (when (or (path-ends-with '("defmethod"))
-                (path-ends-with '("defun")))
+      (when (and (or (path-ends-with '("defmethod"))
+                     (path-ends-with '("defun")))
+                 (<= 3 position)) ; After lambda-list
         (let ((downcased (string-downcase object)))
           ;; Declare ignore
           (suggest #?{(declare (ignore ${downcased}))})
@@ -549,8 +558,10 @@
 
 ;; Quick 'n' dirty copy-paste from symbol method.
 (defmethod generate-suggestions (ap (object looking-at-character)
-                                 path)
+                                 path+pos)
   (let ((suggestions ())
+        (path (first path+pos))
+        (position (second path+pos))
         (line (buffer-context-property :line))
         (file (buffer-context-property :filename))
         (toplevel-name))
@@ -625,7 +636,8 @@
                               }))))))
       ;; Accessors
       (when (and (equal path '("defclass"))
-                 (eql #\) (preceding-char object)))
+                 (eql #\) (preceding-char object))
+                 (= position 3))
         (alexandria:when-let*
             ((preceding-list
               (eval-in-emacs
