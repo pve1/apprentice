@@ -41,50 +41,6 @@
    '(asdf:load-system "apprentice/example-apprentice" :force t)
    :stream stream))
 
-;; Ad-hoc apprentice to describe packages when the point on a keyword
-;; or an uninterned symbol.
-(defun example-describe-package-maybe (object stream)
-  (when (and (or (keywordp object)
-                 (and (symbolp object)
-                      (null (symbol-package object))))
-             (find-package object))
-    (let ((*standard-output* stream)
-          (package (find-package object)))
-      (format t "~A names a package: " object)
-      (put-lisp-button-here *apprentice*
-                            "[DEL]"
-                            `(delete-package
-                              (find-package ',object))
-                            :redisplay t)
-      (princ " ")
-      (put-lisp-button-here *apprentice*
-                            "[CLREXT]"
-                            `(let ((pkg (find-package ',object))
-                                   (ext '()))
-                               (do-external-symbols (sym pkg)
-                                 (push sym ext))
-                               (unexport ext pkg))
-                            :redisplay t)
-      (princ " ")
-      (put-lisp-button-here *apprentice*
-                            "[CLRSYM]"
-                            `(loop :with pkg = (find-package ',object)
-                                   :for sym :being
-                                   :each :symbol
-                                   :in pkg
-                                   :do (unintern sym pkg))
-                            :redisplay t)
-      (terpri)
-      (terpri)
-      (describe package)
-      (format t "~%Export form:~2%")
-      (format t "(EXPORT '(~{~A~^~%          ~}))"
-              (sort (loop :for sym :being :each
-                          :external-symbol :in package
-                          :collect sym)
-                    #'string<))
-      t)))
-
 ;; This is a good starting point for creating your own
 ;; apprentice. Just copy and modify according to taste, then assign
 ;; the resulting instance to *apprentice*.
