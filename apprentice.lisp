@@ -70,7 +70,10 @@ bound by Emacs in certain situations.")
 The Emacs variable APPRENTICE-PROVIDE-CONTEXT determines which
 properties are provided.
 
-Examples: :buffer-name :point :region :package :filename")
+Examples: :buffer-name :point :region :package :filename
+
+Note: The :point and :region properties contains indexes as returned by Emacs,
+i.e. 1-based.")
 
 (makunbound '*buffer-context*)
 

@@ -38,11 +38,14 @@
 ;;; Buffer string
 
 (defmethod Emacs-buffer-string (buffer-form &optional begin end)
+  "From the Emacs buffer indicated by BUFFER-FORM, return the substring
+from the BEGIN to END. The indexes are 1-based, not 0-based, as Emacs
+expects."
   (let ((b (if begin
-               (1+ begin)
+               begin
                '(point-min)))
         (e (if end
-               (1+ end)
+               end
                '(point-max))))
     (eval-in-emacs
      `(with-current-buffer ,buffer-form

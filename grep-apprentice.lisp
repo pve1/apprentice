@@ -119,8 +119,8 @@
   ;; Check for region
   (alexandria:when-let*
       ((region (buffer-context-property :region))
-       (begin (1- (first region)))
-       (end (1- (second region)))
+       (begin (first region))
+       (end (second region))
        (ok-size (< (abs (- begin end))
                    (max-length apprentice)))
        (substring (emacs-current-buffer-string begin end))
