@@ -62,7 +62,7 @@ RETURN-DESCRIPTION.")
 
 (defvar *Force-return-description* nil
   "If non-nil, return a description even if the current object and its
-description are identical to the previous object and description. Is
+description are identical to the previous object and description.  Is
 bound by Emacs in certain situations.")
 
 (defvar *Buffer-context* nil
@@ -72,8 +72,8 @@ properties are provided.
 
 Examples: :buffer-name :point :region :package :filename
 
-Note: The :point and :region properties contains indexes as returned by Emacs,
-i.e. 1-based.")
+Note: The :point and :region properties contain indexes as returned by
+Emacs, i.e. 1-based.")
 
 (makunbound '*buffer-context*)
 
@@ -107,7 +107,7 @@ See apprentice-insert in apprentice.el.")
 
 (defgeneric Describe-with-apprentice (apprentice object stream)
   (:documentation "This function should write a description of OBJECT
-to STREAM. The description will be displayed in the Apprentice Emacs
+to STREAM.  The description will be displayed in the Apprentice Emacs
 window.  The generation of the description should be efficient enough
 to allow this function to be called roughly every time the point
 becomes idle, or periodically, according to the emacs variable
@@ -269,7 +269,7 @@ SWANK:LOOKUP-PRESENTED-OBJECT is defined. "
 (defun suggested-current-package ()
   "Tries to return the \"current\" package.  Uses the :package buffer
 context property, which is the result of calling
-slime-current-package. If that fails, returns *package*."
+slime-current-package.  If that fails, returns *package*."
   (alexandria:when-let ((pkg (buffer-context-property
                               'suggested-current-package)))
     (return-from suggested-current-package pkg))
@@ -370,7 +370,7 @@ SYMBOL-NAME."
   (:documentation
    "Reads FORM-STRING and evaluates the result. Output to
 *STANDARD-OUTPUT* and *ERROR-OUTPUT* is captured and a description
-string combining the output and result is returned. This is done with
+string combining the output and result is returned.  This is done with
 *PACKAGE* bound to the package indicated by
 PACKAGE-DESIGNATOR-STRING.")
   (:method (apprentice (form-string string) package-designator)
@@ -440,7 +440,7 @@ whitespace (using thing-at-point)."))
 
 (defun Character-description (preceding-char following-char)
   "Returns a description relating to the current position of the point
-when SYMBOL-DESCRIPTION is not applicaple."
+when SYMBOL-DESCRIPTION is not applicable."
   (let* ((*package* (suggested-current-package))
          (*description-properties* nil))
     (return-description
