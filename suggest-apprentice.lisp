@@ -588,6 +588,41 @@
                   (goto-char (region-end))
                   (apprentice-describe-form)))
               suggestions))
+      ;; Beginning of asd file
+      (when (and file
+                 (equal "asd" (pathname-type file))
+                 (null (preceding-char object)))
+        (let ((system-name (pathname-name file)))
+          (when system-name
+            (suggest #?{
+                     (asdf:defsystem #:${system-name}
+                       :description ""
+                       :author ""
+                       :license ""
+                       :version "0.0.1"
+                       :serial t
+                       :components ((:file "${system-name}"))
+                       :depends-on ())
+                     })
+            (suggest #?{
+                     (asdf:defsystem #:${system-name}
+                       :description ""
+                       :author ""
+                       :license ""
+                       :version "0.0.1"
+                       :class :package-inferred-system
+                       :depends-on ("${system-name}/${system-name}"))
+                     })
+            (suggest #?{
+                     (asdf:defsystem #:${system-name}
+                       :description ""
+                       :author ""
+                       :license ""
+                       :version "0.0.1"
+                       :class "extensible-inferred-system:comment-system"
+                       :defsystem-depends-on (:extensible-inferred-system)
+                       :depends-on ("${system-name}/${system-name}"))
+                     }))))
       ;; Empty file
       (when (and file
                  (null (preceding-char object))
