@@ -35,5 +35,26 @@ possible, as demonstrated by the included example apprentice.
 
 # Example apprentice demos
 
+## Creating a package
+
 https://github.com/pve1/apprentice-videos/blob/main/create-package-and-class.mp4
 
+## Exporting symbols
+
+https://github.com/pve1/apprentice-videos/blob/main/exporting-symbols.mp4
+
+## Using the overview
+
+https://github.com/pve1/apprentice-videos/blob/main/overview.mp4
+
+## Toggling package qualifiers
+
+https://github.com/pve1/apprentice-videos/blob/main/using-the-qual-button.mp4
+
+## Grepping
+
+https://github.com/pve1/apprentice-videos/blob/main/mentions-and-replacing.mp4
+
+## Monitoring forms
+
+https://github.com/pve1/apprentice-videos/blob/main/monitor-form.mp4
