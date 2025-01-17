@@ -37,24 +37,24 @@ possible, as demonstrated by the included example apprentice.
 
 ## Creating a package
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/create-package-and-class.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/create-package-and-class.mp4)
 
 ## Exporting symbols
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/exporting-symbols.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/exporting-symbols.mp4)
 
 ## Using the overview
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/overview.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/overview.mp4)
 
 ## Toggling package qualifiers
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/using-the-qual-button.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/using-the-qual-button.mp4)
 
 ## Grepping
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/mentions-and-replacing.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/mentions-and-replacing.mp4)
 
 ## Monitoring forms
 
-https://github.com/pve1/apprentice-videos/raw/refs/heads/main/monitor-form.mp4
+[Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/monitor-form.mp4)
