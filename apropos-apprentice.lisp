@@ -102,16 +102,23 @@
           (when (funcall interesting-symbol-function sym)
             (multiple-value-bind (symbol status)
                 (find-symbol (symbol-name sym) pkg)
-              (when (or (eq pkg *package*)
-                        (eq status :external))
-                (incf interesting-symbol-count)
-                ;; Sort according to status
-                (cond ((and (eql pkg *package*)
-                            (member status '(:external :internal)))
-                       (setf (gethash sym present-symbols) t))
-                      ((eql pkg *package*)
-                       (setf (gethash sym inherited-symbols) t))
-                      (t (setf (gethash sym other-symbols) t))))))))
+              ;; TODO: Simplify the following two conditions.
+              (when (or (eq status :external)
+                        (eq pkg *package*))
+                ;; Skip inherited symbols for *package* if symbol was
+                ;; qualified. In other words, only show inherited
+                ;; symbols when no qualifier is used.
+                (unless (and (eq pkg *package*)
+                             (not (eq package-indicator-2 :current))
+                             (eq status :inherited))
+                  (incf interesting-symbol-count)
+                  ;; Sort according to status
+                  (cond ((and (eql pkg *package*)
+                              (member status '(:external :internal)))
+                         (setf (gethash sym present-symbols) t))
+                        ((eql pkg *package*)
+                         (setf (gethash sym inherited-symbols) t))
+                        (t (setf (gethash sym other-symbols) t)))))))))
       (unless (zerop interesting-symbol-count)
         (list :present (alexandria:hash-table-keys present-symbols)
               :inherited (alexandria:hash-table-keys inherited-symbols)
@@ -147,7 +154,7 @@
           (push s other-uninterned)
           (unintern s)))
       (dolist (s present)
-        (unintern s package))      
+        (unintern s package))
       (append present other-uninterned))))
 
 (defmethod apropos-unexport-symbols ((ap apropos-apprentice)
