@@ -37,24 +37,12 @@ possible, as demonstrated by the included example apprentice.
 
 ## Creating a package
 
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/create-package-and-class.mp4)]
-
 ## Exporting symbols
-
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/exporting-symbols.mp4)]
 
 ## Using the overview
 
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/overview.mp4)]
-
 ## Toggling package qualifiers
-
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/using-the-qual-button.mp4)]
 
 ## Grepping
 
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/mentions-and-replacing.mp4)]
-
 ## Monitoring forms
-
-[![Demo](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/monitor-form.mp4)]
