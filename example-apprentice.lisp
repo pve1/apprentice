@@ -47,7 +47,7 @@
 (defun Make-example-apprentice ()
   (let* ((*caching-apprentice-default-update-interval* 2)
          (activity-apprentice (make-instance 'activity-apprentice
-                                :history-length 5
+                                :history-length 3
                                 :proximity-cutoff 60)))
     (make-instance 'example-apprentice
       :overview-apprentices
@@ -63,7 +63,9 @@
             'value-apprentice
             'grep-apprentice
             (make-instance 'apropos-apprentice
-              :min-length 2
+              :ignore-input-function
+              (lambda (sym)
+                (= (length (string sym)) 1))
               :interesting-symbol-function
               (lambda (sym)
                 ;; Ignore mixed case symbols.
