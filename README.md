@@ -37,12 +37,36 @@ possible, as demonstrated by the included example apprentice.
 
 ## Creating a package
 
+
+https://github.com/user-attachments/assets/70aa3e7b-65b4-4a69-aeaf-58c8086a7ed4
+
+
 ## Exporting symbols
+
+
+https://github.com/user-attachments/assets/afcc93db-48db-49cf-8e8e-b75829b08c5d
+
 
 ## Using the overview
 
+
+https://github.com/user-attachments/assets/fe1c5fd7-2c9f-4c72-8ba4-f8fa6310d9f5
+
+
 ## Toggling package qualifiers
+
+
+https://github.com/user-attachments/assets/ef5d2eb4-251f-4faa-9eb6-7b261f13902c
+
 
 ## Grepping
 
+
+https://github.com/user-attachments/assets/ff6be0ee-4c2b-4939-a13e-e3f441358625
+
+
 ## Monitoring forms
+
+
+https://github.com/user-attachments/assets/d366a262-84ad-41dd-ad1b-f873cb541bd3
+
