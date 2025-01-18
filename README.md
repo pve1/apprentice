@@ -16,10 +16,10 @@ possible, as demonstrated by the included example apprentice.
     suggestions in the example apprentice) require
     slime-enable-evaluate-in-emacs to be non-nil.
 -   Bind the following keys:
-
+```
     (define-key lisp-mode-map (kbd "C-c z") 'apprentice-describe)
     (define-key lisp-mode-map (kbd "C-c Z") 'apprentice-describe-form)
-
+```
 -   Open a lisp buffer and press `C-c z` to bring up the apprentice
     buffer.
     -   Move the point around to see what it does.
@@ -34,12 +34,6 @@ possible, as demonstrated by the included example apprentice.
     dangerous forms. Try it on `(random 10)` to get an idea.
 
 # Example apprentice demos
-
-[qwe](https://github.com/pve1/apprentice/raw/refs/heads/assets/create-package-and-class.mp4)
-
-![foo](https://github.com/pve1/apprentice/blob/assets/create-package-and-class.mp4)
-
-[test](https://github.com/pve1/apprentice-videos/raw/refs/heads/main/create-package-and-class.mp4)
 
 ## Creating a package
 
