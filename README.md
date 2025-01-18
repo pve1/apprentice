@@ -35,6 +35,8 @@ possible, as demonstrated by the included example apprentice.
 
 # Example apprentice demos
 
+https://github.com/pve1/apprentice-videos/raw/refs/heads/main/create-package-and-class.mp4
+
 ## Creating a package
 
 
