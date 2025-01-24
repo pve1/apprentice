@@ -986,7 +986,8 @@
   (apprentice-set-input-from-point-maybe)
   (let ((apprentice-force-update t))
     (apprentice-update-the-apprentice-buffer))
-  (display-buffer apprentice-buffer-name))
+  (display-buffer apprentice-buffer-name
+                  '(nil (inhibit-same-window . t))))
 
 ;; Interactive function
 (defun apprentice-describe (prefix)
