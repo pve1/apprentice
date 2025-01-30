@@ -3,6 +3,7 @@
 ;;;;   eclector
 ;;;;   "buttons"
 ;;;;   "emacs"
+;;;;   "system-exec-apprentice"
 
 ;;;; System apprentice
 
@@ -16,7 +17,10 @@
 (defclass System-apprentice ()
   ((confirm-reload :initarg :confirm-reload
                    :accessor confirm-reload
-                   :initform t)))
+                   :initform t)
+   (exec-apprentice :initarg :exec-apprentice
+                    :accessor exec-apprentice
+                    :initform (make-instance 'system-exec-apprentice))))
 
 (defmethod System-apprentice-load ((ap system-apprentice) file)
   (alexandria:when-let* ((file file)
@@ -68,6 +72,10 @@
   (system-apprentice-reload
    ap (buffer-context-property :filename)))
 
+(defmethod system-apprentice-display-exec ((ap system-apprentice))
+  (set-temporary-apprentice
+   (exec-apprentice ap)))
+
 (defmethod describe-with-apprentice ((ap system-apprentice)
                                      (object looking-at-character)
                                      stream)
@@ -81,6 +89,27 @@
       (put-lisp-button-here ap
                             "[RELOAD]"
                             #'system-apprentice-reload-current)
+      (princ " ")
+      t)))
+
+(defmethod describe-with-apprentice ((ap system-apprentice)
+                                     (object symbol)
+                                     stream)
+  (let ((*standard-output* stream))
+    (alexandria:when-let ((file (buffer-context-property :filename)))
+      (princ "System: ")
+      (put-lisp-button-here ap
+                            "[LOAD]"
+                            #'system-apprentice-load-current)
+      (princ " ")
+      (put-lisp-button-here ap
+                            "[RELOAD]"
+                            #'system-apprentice-reload-current)
+      (princ " ")
+      (put-lisp-button-here ap
+                            "[EXEC]"
+                            #'system-apprentice-display-exec
+                            :redisplay t)
       t)))
 
 ;;; Finding system files.
@@ -213,3 +242,4 @@ result in SOURCE-FILE being loaded."
       (if (system-class-uses-subsystems-p system-class)
           (determine-subsystem-name source-file asd)
           (determine-system-name source-file asd)))))
+
