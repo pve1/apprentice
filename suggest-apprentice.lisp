@@ -1,6 +1,6 @@
 ;;;; Requires
 ;;;;   cl-interpol
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "buttons"
 ;;;;   "emacs"
 

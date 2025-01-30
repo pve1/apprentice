@@ -1,5 +1,5 @@
 ;;;; Requires
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "emacs"
 
 (in-package :apprentice) cx

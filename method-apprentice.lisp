@@ -1,6 +1,6 @@
 ;;;; Requires
 ;;;;   closer-mop
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "buttons"
 
 (in-package :apprentice) cx

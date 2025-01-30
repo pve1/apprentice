@@ -1,7 +1,7 @@
 ;;;; Requires
 ;;;;   cl-ppcre
 ;;;;   alexandria
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "caching-apprentice"
 ;;;;   "buttons"
 ;;;;   "symbols"

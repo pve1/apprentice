@@ -1,5 +1,5 @@
 ;;;; Requires
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "buttons"
 ;;;;   "emacs"
 

@@ -1,6 +1,6 @@
 ;;;; Requires
 ;;;;   closer-mop
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "apprentice-gathering"
 ;;;;   "apropos-apprentice"
 ;;;;   "grep-apprentice"

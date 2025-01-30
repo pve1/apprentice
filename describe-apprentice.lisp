@@ -1,6 +1,6 @@
 ;;;; Requires
 ;;;;   closer-mop
-;;;;   "apprentice"
+;;;;   apprentice
 ;;;;   "buttons"
 ;;;;   "temporary-apprentice"
 ;;;;   "emacs"
