@@ -54,6 +54,7 @@
       (list 'suggest-apprentice
             activity-apprentice
             'wide-toplevel-apprentice
+            'grep-apprentice
             #'example-apprentice-reload)
       :apprentices
       (list 'suggest-apprentice
