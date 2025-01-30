@@ -21,10 +21,12 @@
    (label :initarg :label
           :accessor Suggestion-label
           :initform nil)
+   ;; Elisp form to evaluate before inserting suggestion.
    (pre-insert-elisp-form
     :initarg :pre-insert-elisp-form
     :accessor Pre-insert-elisp-form
     :initform nil)
+   ;; Elisp form to evaluate after inserting suggestion.
    (post-insert-elisp-form
     :initarg :post-insert-elisp-form
     :accessor Post-insert-elisp-form
