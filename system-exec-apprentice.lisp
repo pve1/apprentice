@@ -204,7 +204,8 @@
   (:method (executable)
     (system-executable-output executable))
   (:method ((executable system-core))
-    (prin1-to-string (system-executable-output executable))))
+    (let ((*print-right-margin* 1))
+      (prin1-to-string (system-executable-output executable)))))
 
 ;;; Writing the output to disk.
 
