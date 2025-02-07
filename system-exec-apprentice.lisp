@@ -85,7 +85,6 @@
               (setf (slot-value s current)
                     (option-exe-value (first (funcall all s)))))))
 
-
 (defmethod system-exec-present-alternatives ((ap system-exec-apprentice)
                                              label
                                              option-reader
@@ -219,9 +218,7 @@
   (let ((file (system-executable-output-path exec)))
     (alexandria:with-output-to-file (f file)
       (princ (system-executable-output exec) f))
-    (uiop:run-program (list "chmod"
-                            "u+x"
-                            file))
+    (uiop:run-program (list "chmod" "u+x" file))
     (emacs-message "Done.")))
 
 (defmethod make-it-so ((exec system-lisp-script))
