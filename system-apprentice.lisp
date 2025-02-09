@@ -3,7 +3,7 @@
 ;;;;   eclector
 ;;;;   "buttons"
 ;;;;   "emacs"
-;;;;   "system-exec-apprentice"
+;;;;   "exec-apprentice"
 
 ;;;; System apprentice
 
