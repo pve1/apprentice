@@ -86,9 +86,9 @@
                     (option-exe-value (first (funcall all s)))))))
 
 (defmethod exec-present-alternatives ((ap exec-apprentice)
-                                             label
-                                             option-reader
-                                             current-writer)
+                                      label
+                                      option-reader
+                                      current-writer)
   (princ label)
   (dolist (option (funcall option-reader ap))
     (let ((olabel (option-exe-label option))
@@ -241,13 +241,13 @@
 ;;; Mode is an empty "prototype" instance of what is being built.
 
 (defmethod make-executable (apprentice ; Can be anything
-                                   &key mode
-                                        output-directory
-                                        entry-point
-                                        implementation
-                                        required-system
-                                        argv-parser
-                                        (extensionp t))
+                            &key mode
+                                 output-directory
+                                 entry-point
+                                 implementation
+                                 required-system
+                                 argv-parser
+                                 (extensionp t))
   (let ((*exec-build-context* (make-hash-table :test 'equal)))
     (when (pathnamep output-directory)
       (setf output-directory (namestring output-directory)))
