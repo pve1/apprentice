@@ -25,7 +25,7 @@
 
 ;;; Apprentice class
 
-(defclass system-exec-apprentice ()
+(defclass exec-apprentice ()
   ((modes :initarg :modes
           :accessor modes)
    (current-mode :initarg :current-mode
@@ -48,10 +48,10 @@
     :initarg :current-output-extension-alternative
     :accessor current-output-extension-alternative))
   (:default-initargs
-   :modes (list (option-exe 'shell-script 'system-shell-script)
-                (option-exe 'lisp-script 'system-lisp-script)
-                (option-exe 'core 'system-core))
-   :implementations (list (option-exe 'sbcl 'system-sbcl))
+   :modes (list (option-exe 'shell-script 'exec-shell-script)
+                (option-exe 'lisp-script 'exec-lisp-script)
+                (option-exe 'core 'exec-core))
+   :implementations (list (option-exe 'sbcl 'exec-sbcl))
    :argv-parsing-methods (list (option-exe 'single 'single)
                                (option-exe 'subcommands 'subcommands))
    :output-directory-alternatives
@@ -71,7 +71,7 @@
 (defun in-homedir-exe (pathname)
   (merge-pathnames pathname (user-homedir-pathname)))
 
-(defmethod initialize-instance :after ((s system-exec-apprentice) &key)
+(defmethod initialize-instance :after ((s exec-apprentice) &key)
   ;; Initialize current options to the first element of each list.
   (loop :for (all current)
         :in '((modes current-mode)
@@ -85,7 +85,7 @@
               (setf (slot-value s current)
                     (option-exe-value (first (funcall all s)))))))
 
-(defmethod system-exec-present-alternatives ((ap system-exec-apprentice)
+(defmethod exec-present-alternatives ((ap exec-apprentice)
                                              label
                                              option-reader
                                              current-writer)
@@ -102,7 +102,7 @@
        :redisplay t)))
   (terpri))
 
-(defmethod describe-with-apprentice ((ap system-exec-apprentice)
+(defmethod describe-with-apprentice ((ap exec-apprentice)
                                      (object symbol)
                                      stream)
   (alexandria:when-let* ((file (buffer-context-property :filename))
@@ -110,23 +110,23 @@
     (let ((*standard-output* stream))
       (terpri)
       ;; Display options
-      (system-exec-present-alternatives
+      (exec-present-alternatives
        ap "Mode: "
        #'modes
        #'(setf current-mode))
-      (system-exec-present-alternatives
+      (exec-present-alternatives
        ap "Implementation: "
        #'implementations
        #'(setf current-implementation))
-      (system-exec-present-alternatives
+      (exec-present-alternatives
        ap "Argv parsing: "
        #'argv-parsing-methods
        #'(setf current-argv-parsing-method))
-      (system-exec-present-alternatives
+      (exec-present-alternatives
        ap "Output directory: "
        #'output-directory-alternatives
        #'(setf current-output-directory))
-      (system-exec-present-alternatives
+      (exec-present-alternatives
        ap "Output extension: "
        #'output-extension-alternatives
        #'(setf current-output-extension-alternative))
@@ -137,7 +137,7 @@
         (return-from describe-with-apprentice nil))
       (finish-output)
       (let* ((exec
-               (make-system-executable
+               (make-executable
                 ap
                 :mode (make-instance (current-mode ap))
                 :argv-parser (current-argv-parsing-method ap)
@@ -148,7 +148,7 @@
                 :extensionp (current-output-extension-alternative ap))))
         (terpri)
         ;; Display executable.
-        (princ (show-system-executable exec))
+        (princ (show-executable exec))
         (fresh-line)
         (terpri)
         (put-lisp-button-here
@@ -166,7 +166,7 @@
   (:method (implementation) nil)
   (:documentation ""))
 
-(defclass system-lisp-implementation ()
+(defclass exec-lisp-implementation ()
   ((binary-path :initarg :binary-path
                 :accessor binary-path
                 :initform nil)
@@ -174,7 +174,7 @@
                      :accessor static-arguments
                      :initform nil)))
 
-(defclass system-sbcl (system-lisp-implementation)
+(defclass exec-sbcl (exec-lisp-implementation)
   ()
   (:default-initargs
    :binary-path "/usr/bin/sbcl"
@@ -183,64 +183,64 @@
 
 ;;; Build output
 
-(defclass system-executable ()
+(defclass executable ()
   ((output :initarg :output
-           :accessor system-executable-output
+           :accessor executable-output
            :initform nil)
    (output-path :initarg :output-path
-                :accessor system-executable-output-path
+                :accessor executable-output-path
                 :initform nil)))
 
-(defclass system-core (system-executable) ())
-(defclass system-lisp-script (system-executable) ())
-(defclass system-shell-script (system-executable) ())
+(defclass exec-core (executable) ())
+(defclass exec-lisp-script (executable) ())
+(defclass exec-shell-script (executable) ())
 
-(defmethod print-object ((s system-executable) stream)
+(defmethod print-object ((s executable) stream)
   (print-unreadable-object (s stream :type t)
-    (format stream "~S" (system-executable-output s)))
+    (format stream "~S" (executable-output s)))
   s)
 
-(defgeneric show-system-executable (executable)
+(defgeneric show-executable (executable)
   (:method (executable)
-    (system-executable-output executable))
-  (:method ((executable system-core))
+    (executable-output executable))
+  (:method ((executable exec-core))
     (let ((*print-right-margin* 1))
-      (prin1-to-string (system-executable-output executable)))))
+      (prin1-to-string (executable-output executable)))))
 
 ;;; Writing the output to disk.
 
-(defmethod make-it-so ((exec system-core))
+(defmethod make-it-so ((exec exec-core))
   (emacs-message "Please wait.")
-  (uiop:run-program (system-executable-output exec)
+  (uiop:run-program (executable-output exec)
                     :output *debug-io*)
   (emacs-message "Done."))
 
-(defmethod make-it-so ((exec system-shell-script))
-  (let ((file (system-executable-output-path exec)))
+(defmethod make-it-so ((exec exec-shell-script))
+  (let ((file (executable-output-path exec)))
     (alexandria:with-output-to-file (f file)
-      (princ (system-executable-output exec) f))
+      (princ (executable-output exec) f))
     (uiop:run-program (list "chmod" "u+x" file))
     (emacs-message "Done.")))
 
-(defmethod make-it-so ((exec system-lisp-script))
+(defmethod make-it-so ((exec exec-lisp-script))
   (alexandria:with-output-to-file
-      (f (system-executable-output-path exec))
-    (princ (system-executable-output exec) f))
+      (f (executable-output-path exec))
+    (princ (executable-output exec) f))
   (emacs-message "Done."))
 
 ;;; Building the output (scripts or core).
 
-(defvar *system-exec-build-context*)
+(defvar *exec-build-context*)
 
 (defmethod set-exe (symbol value)
-  (setf (gethash symbol *system-exec-build-context*) value))
+  (setf (gethash symbol *exec-build-context*) value))
 
 (defmethod get-exe (symbol)
-  (gethash symbol *system-exec-build-context*))
+  (gethash symbol *exec-build-context*))
 
 ;;; Mode is an empty "prototype" instance of what is being built.
 
-(defmethod make-system-executable (apprentice ; Can be anything
+(defmethod make-executable (apprentice ; Can be anything
                                    &key mode
                                         output-directory
                                         entry-point
@@ -248,7 +248,7 @@
                                         required-system
                                         argv-parser
                                         (extensionp t))
-  (let ((*system-exec-build-context* (make-hash-table :test 'equal)))
+  (let ((*exec-build-context* (make-hash-table :test 'equal)))
     (when (pathnamep output-directory)
       (setf output-directory (namestring output-directory)))
     (assert (alexandria:ends-with-subseq "/" output-directory))
@@ -308,19 +308,19 @@
 
 ;;; Lisp core
 
-(defmethod build-output-exe ((impl system-sbcl) (mode system-core))
-  (make-instance 'system-core
+(defmethod build-output-exe ((impl exec-sbcl) (mode exec-core))
+  (make-instance 'exec-core
     :output (append (list (binary-path impl))
                     (static-arguments impl)
                     (build-eval-arguments-exe impl mode))))
 
-(defmethod build-eval-arguments-exe ((impl system-sbcl) (mode system-core))
+(defmethod build-eval-arguments-exe ((impl exec-sbcl) (mode exec-core))
   (list "--eval" "(require '#:asdf)"
         "--eval" "(asdf:load-system '#:apply-argv)"
         "--eval" #?{(asdf:load-system '#:${(get-exe 'required-system)})}
         "--eval" (build-save-core-form-string-exe impl mode)))
 
-(defmethod build-save-core-form-string-exe ((impl system-sbcl) (mode system-core))
+(defmethod build-save-core-form-string-exe ((impl exec-sbcl) (mode exec-core))
   (let ((output-path (build-output-path-exe impl mode :extension ".core"))
         (toplevel-form-string
           (build-toplevel-form-string-exe impl mode)))
@@ -334,7 +334,7 @@
 
 ;;; Shell script
 
-(defmethod build-eval-arguments-exe ((impl system-sbcl) (mode system-shell-script))
+(defmethod build-eval-arguments-exe ((impl exec-sbcl) (mode exec-shell-script))
   (mapcar (lambda (x)
             (make-shell-argument-sh-exe "--eval" x))
           (list #?"(require '#:asdf)"
@@ -343,7 +343,7 @@
                 #?"${(build-toplevel-form-string-exe impl mode)}"
                 #?"(sb-ext:exit)")))
 
-(defmethod build-output-exe (impl (mode system-shell-script))
+(defmethod build-output-exe (impl (mode exec-shell-script))
   (let* ((output-path (build-output-path-exe impl mode :extension ".sh"))
          (eval-arguments (build-eval-arguments-exe impl mode))
          (static-arguments (static-arguments impl))
@@ -358,13 +358,13 @@
            @{ eval-arguments } \\
            "$@"
            }))
-    (make-instance 'system-shell-script
+    (make-instance 'exec-shell-script
       :output-path output-path
       :output (trim-lines-left-exe script))))
 
 ;;; Lisp script
 
-(defmethod build-output-exe ((impl system-sbcl) (mode system-lisp-script))
+(defmethod build-output-exe ((impl exec-sbcl) (mode exec-lisp-script))
   (let* ((output-path
            (build-output-path-exe
             impl mode
@@ -381,6 +381,6 @@
           ${toplevel-form-string}
           (sb-ext:exit)
           }))
-    (make-instance 'system-lisp-script
+    (make-instance 'exec-lisp-script
       :output-path output-path
       :output (trim-lines-left-exe script))))

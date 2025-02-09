@@ -20,7 +20,7 @@
                    :initform t)
    (exec-apprentice :initarg :exec-apprentice
                     :accessor exec-apprentice
-                    :initform (make-instance 'system-exec-apprentice))))
+                    :initform (make-instance 'exec-apprentice))))
 
 (defmethod System-apprentice-load ((ap system-apprentice) file)
   (alexandria:when-let* ((file file)
