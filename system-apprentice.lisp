@@ -10,14 +10,12 @@
 ;;;; This apprentice will try to figure out to which system the
 ;;;; current buffer belongs and then load it (using asdf:load).
 
-;;;; Reloading means restarting lisp and then loading the system.
-
 (in-package :apprentice) cx
 
 (defclass System-apprentice ()
-  ((confirm-reload :initarg :confirm-reload
-                   :accessor confirm-reload
-                   :initform t)
+  ((confirm-restart :initarg :confirm-restart
+                    :accessor confirm-restart
+                    :initform t)
    (exec-apprentice :initarg :exec-apprentice
                     :accessor exec-apprentice
                     :initform (make-instance 'exec-apprentice))))
@@ -29,10 +27,10 @@
     (asdf:load-system system)))
 
 ;;; Wow, many hoops, such jumping.
-(defmethod system-apprentice-reload ((ap system-apprentice) file)
+(defmethod system-apprentice-restart ((ap system-apprentice) file)
   (alexandria:when-let* ((file file)
                          (system (source-file-system-name file))
-                         (confirm (if (confirm-reload ap)
+                         (confirm (if (confirm-restart ap)
                                       (eval-in-emacs
                                        `(member
                                          (read-key "Restart lisp? (Y/n)")
@@ -46,10 +44,10 @@
     (eval-in-emacs
      `(progn
         ;; One-time hook
-        (setf (symbol-function 'apprentice-example-system-reload-hook)
+        (setf (symbol-function 'apprentice-example-system-restart-hook)
               (lambda ()
                 (remove-hook 'slime-connected-hook
-                             'apprentice-example-system-reload-hook)
+                             'apprentice-example-system-restart-hook)
                 (slime-eval-async
                  (car (read-from-string ,load-string))
                  (lambda (result)
@@ -59,7 +57,7 @@
          0.1 nil
          (lambda ()
            (add-hook 'slime-connected-hook
-                     'apprentice-example-system-reload-hook
+                     'apprentice-example-system-restart-hook
                      99)
            (slime-restart-inferior-lisp)))))
     t))
@@ -68,8 +66,8 @@
   (system-apprentice-load
    ap (buffer-context-property :filename)))
 
-(defmethod system-apprentice-reload-current ((ap system-apprentice))
-  (system-apprentice-reload
+(defmethod system-apprentice-restart-current ((ap system-apprentice))
+  (system-apprentice-restart
    ap (buffer-context-property :filename)))
 
 (defmethod system-apprentice-display-exec ((ap system-apprentice))
@@ -87,8 +85,8 @@
                             #'system-apprentice-load-current)
       (princ " ")
       (put-lisp-button-here ap
-                            "[RELOAD]"
-                            #'system-apprentice-reload-current)
+                            "[RESTART-LOAD]"
+                            #'system-apprentice-restart-current)
       (princ " ")
       t)))
 
@@ -103,13 +101,15 @@
                             #'system-apprentice-load-current)
       (princ " ")
       (put-lisp-button-here ap
-                            "[RELOAD]"
-                            #'system-apprentice-reload-current)
+                            "[RESTART-LOAD]"
+                            #'system-apprentice-restart-current)
       (princ " ")
-      (put-lisp-button-here ap
-                            "[EXEC]"
-                            #'system-apprentice-display-exec
-                            :redisplay t)
+      (when (and (symbol-package object)
+                 (fboundp object))
+        (put-lisp-button-here ap
+                              "[EXEC]"
+                              #'system-apprentice-display-exec
+                              :redisplay t))
       t)))
 
 ;;; Finding system files.
