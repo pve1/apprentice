@@ -17,6 +17,8 @@
 
 ;;; TODO:
 ;;; - More implementations
+;;;   - [X] SBCL
+;;;   - [/] ECL
 ;;; - Name switches
 ;;; - Support creating interactive cores
 ;;; - Standalone fasl loader, no ASDF
@@ -51,11 +53,12 @@
    :modes (list (option-exe 'shell-script 'exec-shell-script)
                 (option-exe 'lisp-script 'exec-lisp-script)
                 (option-exe 'core 'exec-core))
-   :implementations (list (option-exe 'sbcl 'exec-sbcl))
+   :implementations (list (option-exe 'sbcl 'exec-sbcl)
+                          (option-exe 'ecl 'exec-ecl))
    :argv-parsing-methods (list (option-exe 'single 'single)
                                (option-exe 'subcommands 'subcommands))
    :output-directory-alternatives
-   (list (option-exe "./" "./")
+   (list (option-exe "./" 'cwd-exe)
          (option-exe "~/bin/" (in-homedir-exe "bin/"))
          (option-exe "~/.local/bin/" (in-homedir-exe ".local/bin/")))
    :output-extension-alternatives
@@ -70,6 +73,16 @@
 
 (defun in-homedir-exe (pathname)
   (merge-pathnames pathname (user-homedir-pathname)))
+
+(defun cwd-exe ()
+  (directory-namestring
+   (buffer-context-property :filename)))
+
+(defmethod current-output-directory ((ap exec-apprentice))
+  (let ((val (slot-value ap 'current-output-directory)))
+    (typecase val
+      ((or function symbol) (funcall val))
+      (t val))))
 
 (defmethod initialize-instance :after ((s exec-apprentice) &key)
   ;; Initialize current options to the first element of each list.
@@ -111,13 +124,13 @@
       (terpri)
       ;; Display options
       (exec-present-alternatives
-       ap "Mode: "
-       #'modes
-       #'(setf current-mode))
-      (exec-present-alternatives
        ap "Implementation: "
        #'implementations
        #'(setf current-implementation))
+      (exec-present-alternatives
+       ap "Mode: "
+       #'modes
+       #'(setf current-mode))
       (exec-present-alternatives
        ap "Argv parsing: "
        #'argv-parsing-methods
@@ -166,13 +179,24 @@
   (:method (implementation) nil)
   (:documentation ""))
 
+(defgeneric name (implementation)
+  (:documentation ""))
+
 (defclass exec-lisp-implementation ()
   ((binary-path :initarg :binary-path
                 :accessor binary-path
                 :initform nil)
    (static-arguments :initarg :static-arguments
                      :accessor static-arguments
-                     :initform nil)))
+                     :initform nil)
+   (name :initarg :name
+         :accessor name
+         :initform nil)))
+
+(defmethod initialize-instance :after ((e exec-lisp-implementation)
+                                       &key name)
+  (unless name
+    (setf (name e) (pathname-name (binary-path e)))))
 
 (defclass exec-sbcl (exec-lisp-implementation)
   ()
@@ -180,6 +204,12 @@
    :binary-path "/usr/bin/sbcl"
    :static-arguments (list "--noinform"
                            "--non-interactive")))
+
+(defclass exec-ecl (exec-lisp-implementation)
+  ()
+  (:default-initargs
+   :binary-path "/usr/local/bin/ecl"
+   :static-arguments nil))
 
 ;;; Build output
 
@@ -212,7 +242,8 @@
 (defmethod make-it-so ((exec exec-core))
   (emacs-message "Please wait.")
   (uiop:run-program (executable-output exec)
-                    :output *debug-io*)
+                    :output *debug-io*
+                    :error-output *debug-io*)
   (emacs-message "Done."))
 
 (defmethod make-it-so ((exec exec-shell-script))
@@ -239,6 +270,10 @@
   (gethash symbol *exec-build-context*))
 
 ;;; Mode is an empty "prototype" instance of what is being built.
+
+;;; Make-executable is stand-alone, in the sense that it doesn't know
+;;; anything about apprentices. It simply returns the build ouput
+;;; based on the keyword parameters below.
 
 (defmethod make-executable (apprentice ; Can be anything
                             &key mode
@@ -306,13 +341,13 @@
             (t (get-exe 'argv-parser)))))
     #?"(apply #'${(get-exe 'qualified-entry-point-string)} ${argv-parser-form})"))
 
-;;; Lisp core
-
-(defmethod build-output-exe ((impl exec-sbcl) (mode exec-core))
+(defmethod build-output-exe (impl (mode exec-core))
   (make-instance 'exec-core
     :output (append (list (binary-path impl))
                     (static-arguments impl)
                     (build-eval-arguments-exe impl mode))))
+
+;;; Lisp core sbcl
 
 (defmethod build-eval-arguments-exe ((impl exec-sbcl) (mode exec-core))
   (list "--eval" "(require '#:asdf)"
@@ -332,16 +367,39 @@
      :executable t \
      :compression t)}))
 
-;;; Shell script
+;;; Lisp core ecl
 
-(defmethod build-eval-arguments-exe ((impl exec-sbcl) (mode exec-shell-script))
-  (mapcar (lambda (x)
-            (make-shell-argument-sh-exe "--eval" x))
-          (list #?"(require '#:asdf)"
-                #?"(asdf:load-system '#:apply-argv)"
-                #?"(asdf:load-system '#:${(get-exe 'required-system)})"
-                #?"${(build-toplevel-form-string-exe impl mode)}"
-                #?"(sb-ext:exit)")))
+(defmethod build-save-core-form-string-exe ((impl exec-ecl) (mode exec-core))
+  (let ((output-path (build-output-path-exe impl mode :extension ".core"))
+        (toplevel-form-string
+          (build-toplevel-form-string-exe impl mode)))
+    #?{\
+    (let ((object-files
+            (remove-if-not (lambda (x)
+                             (equal "o" (pathname-type x)))
+                           (remove-duplicates
+                            (append
+                             (apprentice::exec-fasls-to-load-system
+                              "${(get-exe 'required-system)}")
+                             (apprentice::exec-fasls-to-load-system
+                              "apply-argv"))
+                            :test #'equal
+                            :from-end t))))
+      (c:build-program
+       "${output-path}"
+       :lisp-files object-files
+       :epilogue-code '(progn
+                        ${toplevel-form-string}
+                        (si:exit))))}))
+
+(defmethod build-eval-arguments-exe ((impl exec-ecl) (mode exec-core))
+  (list "--eval" "(asdf:load-system '#:apply-argv)"
+        "--eval" "(asdf:load-system '#:apprentice/exec-apprentice)"
+        "--eval" #?{(asdf:load-system '#:${(get-exe 'required-system)})}
+        "--eval" (build-save-core-form-string-exe impl mode)
+        "--eval" "(si:quit)"))
+
+;;; Shell script general
 
 (defmethod build-output-exe (impl (mode exec-shell-script))
   (let* ((output-path (build-output-path-exe impl mode :extension ".sh"))
@@ -361,6 +419,36 @@
     (make-instance 'exec-shell-script
       :output-path output-path
       :output (trim-lines-left-exe script))))
+
+;;; Shell script sbcl
+
+(defmethod build-eval-arguments-exe ((impl exec-sbcl) (mode exec-shell-script))
+  (mapcar (lambda (x)
+            (make-shell-argument-sh-exe "--eval" x))
+          (list #?"(require '#:asdf)"
+                #?"(asdf:load-system '#:apply-argv)"
+                #?"(asdf:load-system '#:${(get-exe 'required-system)})"
+                #?"${(build-toplevel-form-string-exe impl mode)}"
+                #?"(sb-ext:exit)")))
+
+;;; Shell script ecl
+
+(defmethod build-toplevel-form-string-exe ((impl exec-ecl) (mode exec-shell-script))
+  (let ((argv-parser-form
+          (case (get-exe 'argv-parser)
+            (single #?{(let ((arguments (nthcdr (position "--" (ext:command-args) :test #'equal) (ext:command-args)))) (apply-argv:parse-argv* arguments))})
+            (subcommands #?{(let ((arguments (nthcdr (position "--" (ext:command-args) :test #'equal) (ext:command-args)))) (apply-argv:parse-argv arguments))})
+            (t (get-exe 'argv-parser)))))
+    #?"(apply #'${(get-exe 'qualified-entry-point-string)} ${argv-parser-form})"))
+
+(defmethod build-eval-arguments-exe ((impl exec-ecl) (mode exec-shell-script))
+  (append (mapcar (lambda (x)
+                    (make-shell-argument-sh-exe "--eval" x))
+                  (list #?"(asdf:load-system '#:apply-argv)"
+                        #?"(asdf:load-system '#:${(get-exe 'required-system)})"
+                        #?"${(build-toplevel-form-string-exe impl mode)}"
+                        #?"(si:quit)"))
+          (list "--")))
 
 ;;; Lisp script
 
@@ -384,3 +472,40 @@
     (make-instance 'exec-lisp-script
       :output-path output-path
       :output (trim-lines-left-exe script))))
+
+;;; System dependencies
+
+(defun exec-system-fasl-files (system-name)
+  (loop :for c :in (asdf:required-components
+                    (asdf:find-system system-name))
+        :when (typep c 'asdf:cl-source-file)
+        :append (asdf:output-files 'asdf:compile-op c)))
+
+(defun exec-system-dependencies (system-name)
+  (labels ((dependencies (system-name)
+             (let* ((system (asdf:find-system system-name))
+                    (deps (asdf:system-depends-on system))
+                    ;; Handles (:feature ...)
+                    (resolved-deps
+                      (alexandria:mappend
+                       (lambda (s)
+                         (let ((dep (asdf/find-component:resolve-dependency-spec
+                                     system s)))
+                           (when dep
+                             (list (asdf:component-name dep)))))
+                       deps)))
+               (append resolved-deps
+                       (alexandria:mappend #'dependencies resolved-deps)))))
+    (reverse (remove-duplicates (dependencies system-name) :test #'string=))))
+
+(defun exec-fasls-to-load-system (system)
+  (let ((deps (exec-system-dependencies system)))
+    ;; Check for 'require' systems.
+    (dolist (sysname deps)
+      (let ((sys (asdf:find-system sysname)))
+        (when (typep sys 'asdf:require-system)
+          (warn "System ~S must be 'required', ignoring."
+                sysname))))
+    (loop :for sys :in (append deps (list system))
+          :append (exec-system-fasl-files sys))))
+
