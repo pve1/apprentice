@@ -13,18 +13,6 @@
 ;;; Objective: Make any lisp function available as a lisp script or a
 ;;; shell command either through a shell script or by saving a core.
 
-;;; TODO:
-;;; - More implementations
-;;;   - [X] SBCL
-;;;   - [/] ECL
-;;; - Name switches
-;;; - Support creating interactive cores
-;;; - Standalone fasl loader, no ASDF
-;;; - [X] Output location (CWD, ~/bin)
-;;; - [X] Also support executables with "subcommands", like git status|pull|...
-
-;;; Apprentice class
-
 (defclass exec-apprentice ()
   ((build-wizard :initarg :build-wizard
                  :accessor build-wizard
