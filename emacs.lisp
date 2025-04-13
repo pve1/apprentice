@@ -1,7 +1,7 @@
 ;;;; Requires
 ;;;;   alexandria
 ;;;;   swank
-;;;;   apprentice
+;;;;   apprentice/package
 ;;;;   "symbols"
 
 ;;;; Functions to make Emacs do things.

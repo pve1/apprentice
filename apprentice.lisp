@@ -507,3 +507,19 @@ the symbol STREAM within BODY to COLOR.  Use OFFSET to handle nested
 WITH-OUTPUT-TO-STRING forms."
   `(with-face ('(:foreground ,color) ,stream ,offset)
      ,@body))
+
+(defmacro with-dummy-buffer-context (&body body)
+  `(with-output-to-string (*standard-output*)
+     (let ((*description-properties*)
+           (*buffer-context*
+             (list 'PACKAGE-INDICATOR :CURRENT
+                   :NAME "*buffer-context*"
+                   :POINT 1
+                   :COLUMN 0
+                   :REGION NIL
+                   :LINE 1
+                   :PACKAGE ":imaginary-package"
+                   :FILENAME "/home/alice/abc.lisp"
+                   :LOCKED NIL
+                   :BUFFER-NAME "abc.lisp")))
+       ,@body)))

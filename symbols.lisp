@@ -1,4 +1,5 @@
 ;;;; Requires
+;;;;   apprentice/package
 
 (in-package :apprentice) cx
 
