@@ -294,25 +294,27 @@
 
 (defmethod build-output-exe (impl (mode exec-lisp-script))
   (let* ((output-path
-           (build-output-path-exe
-            impl mode
-            :extension "-script.lisp"))
-         (toplevel-form-string
-           (build-toplevel-form-string-exe impl mode))
-         (eval-args (get-exe 'eval-args))
-         (cl-interpol:*list-delimiter* #?{ \\\n})
-         (script #?{\
-           ;; ${output-path}
-          ${(exec-disable-debugger-string impl)}
-          ${(load-required-system-exe)}
-          @{(load-additional-systems-exe)}
-          @{eval-args}
-          ${toplevel-form-string}
-          ${(exec-exit-string impl)}
-          }))
-    (make-instance 'exec-lisp-script
-      :output-path output-path
-      :output (trim-lines-left-exe script))))
+             (build-output-path-exe
+              impl mode
+              :extension "-script.lisp"))
+           (toplevel-form-string
+             (build-toplevel-form-string-exe impl mode))
+           (eval-args (get-exe 'eval-args))
+           (cl-interpol:*list-delimiter* #?{ \\\n})
+           (script
+             (with-output-to-string (*standard-output*)
+               (write-line #?{\;\; ${output-path}})
+               (write-line (exec-disable-debugger-string impl))
+               (write-line (load-required-system-exe))
+               (dolist (s (load-additional-systems-exe))
+                 (write-line s))
+               (dolist (s eval-args)
+                 (write-line s))
+               (write-line toplevel-form-string)
+               (write-line (exec-exit-string impl)))))
+      (make-instance 'exec-lisp-script
+        :output-path output-path
+        :output (trim-lines-left-exe script))))
 
 ;;; Core general
 
