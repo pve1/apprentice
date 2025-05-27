@@ -22,10 +22,10 @@
    (option "Mode"
            `((shell-script exec-shell-script)
              (lisp-script exec-lisp-script)
-             (executable 
+             (executable
               exec-executable-core
               (suboptions
-               ,(option 
+               ,(option
                  "Executable type"
                  '((normal exec-program-core
                     (message "Load system, then save-lisp-and-die."))
@@ -59,7 +59,7 @@
                                 (no nil))))
   (:documentation ""))
 
-(defmethod initialize-instance :after ((ap exec-apprentice) 
+(defmethod initialize-instance :after ((ap exec-apprentice)
                                        &key modes
                                             implementations
                                             arg-parsing-methods
@@ -80,7 +80,7 @@
             :options
             (list :implementations (or implementations*
                                        implementations)
-                  :modes modes                  
+                  :modes modes
                   :arg-parsing-methods arg-parsing-methods
                   :output-extension-alternatives
                   output-extension-alternatives
@@ -117,7 +117,7 @@
   (exec-current-option-value apprentice :arg-parsing-methods))
 
 (defmethod current-output-directory (apprentice)
-  (exec-current-option-value apprentice 
+  (exec-current-option-value apprentice
                              :output-directory-alternatives))
 
 (defmethod current-output-extension-alternative (apprentice)
