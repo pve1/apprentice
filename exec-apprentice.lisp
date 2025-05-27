@@ -36,32 +36,15 @@
                               (ecl exec-ecl)))
    :arg-parsing-methods
    (option "Arg parsing"
-           `((unparsed unparsed
-                       (message "(defun command (a b &optional c &rest d) ...)"))
-             (parsed nil
-                     (message "(defun command (a b &key c d) ...)")
-                     (suboptions
-                      ,(option 
-                        "Option types"
-                        '((standard 
-                           (call-with-args
-                            "apprentice::parse-standard-command-line-arguments")
-                           (message "$ myprogram.core subcommand -abc --long 123 foo bar")
-                           (requires "apprentice/command-line"))
-                          (natural
-                           (call-with-args
-                            "apprentice::parse-natural-style-command-line-arguments")
-                           (message "$ myprogram.core subcommand long: 123 xyz: yes foo bar")
-                           (requires "apprentice/command-line"))
-                          (lisp 
-                           (call-with-args 
-                            "apprentice::parse-lisp-style-command-line-arguments")
-                           (message "$ myprogram.core subcommand foo bar :long 123 :xyz yes")
-                           (requires "apprentice/command-line"))))))
-             (argv argv
-                   (message "(defun command (&rest argv) ...)"))
-             (none none
-                   (message "(defun command () ...)"))))
+           `((unparsed
+              unparsed
+              (message "(defun command (a b &optional c &rest d) ...)"))
+             (parsed
+              (call-with-args "apprentice::parse-command-line-options-flexible")
+              (message "(defun command (a b &key c d) ...) (see command-line.lisp for details)")
+              (requires "apprentice/command-line"))
+             (argv argv (message "(defun command (&rest argv) ...)"))
+             (none none (message "(defun command () ...)"))))
    :output-directory-alternatives
    (option "Output directory"
            `(("./" buffer-dir-exe)
